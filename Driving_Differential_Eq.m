@@ -1,7 +1,7 @@
 function [ Sim_Struct ] = Driving_Differential_Eq( Sim_Struct, Verbosity )
 
 
-if strcmp(Verbosity,'Full')
+if ~strcmp(Verbosity,'None')
     display('-I- Starting driving differential equation...');
 end
 

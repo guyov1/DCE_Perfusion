@@ -1,8 +1,12 @@
 function [ Sim_Struct ] = Simulation_Set_Params( Sim_Struct, Verbosity )
 
-if strcmp(Verbosity,'Full')
+if ~strcmp(Verbosity,'None')
     display('-I- Setting simulation parameters...');
 end
+
+% Force serial and not parallel
+Sim_Struct.FORCE_SERIAL           = false;
+Sim_Struct.FORCE_MAIN_LOOP_SERIAL = true;
 
 % Initiate index for future figures
 Sim_Struct.idx_fig = 1;
@@ -11,22 +15,22 @@ Sim_Struct.idx_fig = 1;
 % Factor for AIF to have realistic values like we see in MRI images
 Sim_Struct.r_factor = 0.0116;
 % AIF average population parameters
-Sim_Struct.A1    = 0.809;
-Sim_Struct.A2    = 0.330;
+Sim_Struct.A1       = 0.809;
+Sim_Struct.A2       = 0.330;
 % Changed to shift the boluses to the right
-Sim_Struct.T1    = 0.17046;
-Sim_Struct.T2    = 0.365;
+Sim_Struct.T1       = 0.17046;
+Sim_Struct.T2       = 0.365;
 %T1    = 0.27046;
 %T2    = 0.465;
-Sim_Struct.sig1  = 0.0563;
-Sim_Struct.sig2  = 0.132;
-Sim_Struct.alpha = 1.050;
-Sim_Struct.beta  = 0.1685;
-Sim_Struct.s     = 38.078;
-Sim_Struct.tau   = 0.483;
+Sim_Struct.sig1     = 0.0563;
+Sim_Struct.sig2     = 0.132;
+Sim_Struct.alpha    = 1.050;
+Sim_Struct.beta     = 0.1685;
+Sim_Struct.s        = 38.078;
+Sim_Struct.tau      = 0.483;
 
 % Set number of iterations for simulation
-Sim_Struct.num_iterations = 100; %15
+Sim_Struct.num_iterations = 150; %15
 % Do each iteration a few time and average results for better statistic information
 Sim_Struct.num_averages   = 1; %5
 
@@ -128,8 +132,9 @@ Sim_Struct.iterate_AIF_delay             = 0;
 Sim_Struct.iterate_uniformly             = 1; % Uniformly generate parameters data
 
 % If not iterating, update back to 1 iteration
-if ~(Sim_Struct.iterate_SNR || Sim_Struct.iterate_sec_interval || Sim_Struct.iterate_gaussian_sigma || Sim_Struct.iterate_gaussian_time_delay || ...
-        Sim_Struct.iterate_gaussian_amplitude || Sim_Struct.iterate_F_larsson || Sim_Struct.iterate_Vb_larsson || Sim_Struct.iterate_E_larsson || Sim_Struct.iterate_Ve_larsson || Sim_Struct.iterate_AIF_delay || Sim_Struct.iterate_uniformly)
+if ~( Sim_Struct.iterate_SNR                || Sim_Struct.iterate_sec_interval || Sim_Struct.iterate_gaussian_sigma || Sim_Struct.iterate_gaussian_time_delay || ...
+      Sim_Struct.iterate_gaussian_amplitude || Sim_Struct.iterate_F_larsson    || Sim_Struct.iterate_Vb_larsson     || Sim_Struct.iterate_E_larsson           || ...
+      Sim_Struct.iterate_Ve_larsson         || Sim_Struct.iterate_AIF_delay    || Sim_Struct.iterate_uniformly)
     
     Sim_Struct.num_iterations = 1;
     Sim_Struct.num_averages   = 1;
@@ -139,10 +144,10 @@ end
 % Plot graphs when not iterating
 % When iterating, plot the error as a function of parameters
 if (Sim_Struct.num_iterations == 1 && Sim_Struct.num_averages == 1)
-    Sim_Struct.plot_flag = true;
+    Sim_Struct.plot_flag               = true;
     Sim_Struct.plot_error_results_flag = false;
 else
-    Sim_Struct.plot_flag = false;
+    Sim_Struct.plot_flag               = false;
     Sim_Struct.plot_error_results_flag = true;
 end
 
@@ -175,11 +180,14 @@ Sim_Struct.Derivative_Time_Devision = false;
 
 % Choose which Patlak estimation to take
 % Possible - 1. "Specified Points" 2. "All Points" 3. "Weighted Points"
-Sim_Struct.Patlak_Est        = 'Specified Points';
+Sim_Struct.Patlak_Est         = 'Specified Points';
 
 % Choose which filter estimation to use when calculating parameters (non-linear method)
-% Possible: 'Wiener', 'Ridge', 'Spline', 'Spline_1st', 'Spline_2nd', 'PCA'
-Sim_Struct.Filter_Est_Chosen = 'Wiener';
+% Possible: 'Wiener', 'Ridge', 'Spline', 'Spline_1st', 'Spline_2nd', 'PCA_1st', 'PCA_2nd'
+Sim_Struct.Filter_Est_Chosen  = 'PCA_1st';
+
+% Number of iterations for PCA basis creation
+Sim_Struct.Num_iterations_PCA = 100000; 
 
 % Use the adjusted Larsson filter
 Sim_Struct.Adjusted_Larsson_Model = true;
@@ -199,7 +207,7 @@ Sim_Struct.Diff_From_Bolus                        = 10;        % The difference 
 Sim_Struct.BiExp2CTC_RMS_Ratio                    = 0;         % Sets the ratio between BiExp fit and CTC fit when estimating time delay
 
 % Polynomial degree for basis splines
-Sim_Struct.poly_deg      = 4;
+Sim_Struct.poly_deg                               = 4;
 
 % Choose knots for splines (currently takes every 1 out of 2 points)
 Sim_Struct.knot_interval                    = 2; % knots         = time_vec_minutes(1:knot_interval:end)
@@ -217,19 +225,29 @@ Sim_Struct.est_larss_filter_Wiener_noise    = zeros(Sim_Struct.num_time_stamps,1
 % 1. Ridge regression  2. Spline-no deriv
 % 3. Spline-1st deriv  4. Spline-2nd deriv
 %lambda_vec              = [9 132 0.0391 0.0141];
-Sim_Struct.lambda_vec_gauss        = [34.7 11 0.1 16.8];
+Sim_Struct.lambda_vec_gauss        = [34.7 11 0.1 16.8 1 1 1];
 %lambda_vec              = [9 132 0.0391 0.4];
 %Sim_Struct.lambda_vec_larss        = [4.7 0.9 0.1 0.4];
 %Sim_Struct.lambda_vec_larss        = [9 132 0.0391 1.9];
 %Sim_Struct.lambda_vec_larss        = [9 132 0.0391 0.012];
-Sim_Struct.lambda_vec_larss        = [4.7 0.9 0.1 0.9]; %[4.7 0.9 0.1 0.2]
+Sim_Struct.lambda_vec_larss        = [33.51 13 0.6 13.9 16.7 9.8 2.4]; %[4.7 0.9 0.1 0.2 1 1 1 1]
+
+% Best Lambdas so far
+% Ridge      = 33.51
+% Spline     = 13
+% Spline 1st = 0.6
+% Spline 2nd = 13.9
+% PCA        = 16.7
+% PCA 1st    = 13.5  / 9.8
+% PCA 2nd    = 2.4
+
 %lambda_vec              = [9 132 0.0391 1.9];
 %lambda_vec              = [9 132 0.0391 0.0];
 %lambda_vec              = [9 132 0.0391 0.012]; 74.8
-Sim_Struct.normalize               = 1;  % Normalize flag for ridge() function
+Sim_Struct.normalize     = 1;  % Normalize flag for ridge() function
 
 % Choose whether to plot L curve
-Sim_Struct.plot_L_Curve = 0;
+Sim_Struct.plot_L_Curve = false;
 
 % Initiate results matrix which will hold:
 % 1.     SNR ratio
@@ -255,7 +273,9 @@ Sim_Struct.plot_L_Curve = 0;
 % 75-78. Sourbron method: original Vb,         estimated Vb using 2CXM, error percent and standard deviation
 % 79-82. Sourbron method: original Ve,         estimated Ve using 2CXM, error percent and standard deviation
 % 83-86. Larsson filter : original Ve,         estimated Ve using 2CXM, error percent and standard deviation
-Sim_Struct.num_results_parameters = 86;
+% 87-99. Absolute error for all larsson paramters
+
+Sim_Struct.num_results_parameters = 99;
 Sim_Struct.results                = zeros(Sim_Struct.num_results_parameters,Sim_Struct.num_iterations);
 
 %% Check parameters conflicts

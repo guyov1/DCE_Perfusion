@@ -14,22 +14,8 @@ Sim_Struct = Simulation_Set_Params(Sim_Struct, Verbosity);
 % Initiate simulation vars/structs etc.
 Sim_Struct = Simulation_Init(Sim_Struct, Verbosity);
 
-% Add needed functions to parallel workers
-if (Sim_Struct.num_iterations > 1)
-    
-    if strcmp(Verbosity,'Full')
-        display('-I- Starting Parallel Processing Setting...');
-    end
-    
-    myPool  = gcp;
-    myFiles = {'Summarize_Iteration.m', 'Estimate_ht_Wiener.m', 'Simulation.m', ...
-               'Print2Pdf.m', 'gprint.m', 'AddToLog.m', 'Regularized_Sol.m'};
-    addAttachedFiles(myPool, myFiles);
-    
-    if strcmp(Verbosity,'Full')
-        display('-I- Finished Parallel Processing Setting...');
-    end
-end
+% Set parallel processing if needed
+Set_Parallel_Processing(Sim_Struct, Verbosity);
 
 %% AIFs creation for all iterations
 Sim_Struct = Create_AIFs(Sim_Struct, Verbosity);
@@ -69,12 +55,13 @@ idx_fig_Rep                     = repmat(idx_fig,1,num_iterations);
 % Initiate results to zeros
 results         = zeros(num_results_parameters,num_iterations);
 
-if strcmp(Verbosity,'Full')
+tic;
+if ~strcmp(Verbosity,'None')
     display('-I- STARTED MAIN LOOP!');
 end
 
-if (num_iterations == 1)
-    Simulation_Serial;
+if (num_iterations == 1 || Sim_Struct.FORCE_SERIAL || Sim_Struct.FORCE_MAIN_LOOP_SERIAL)
+    Simulation_Serial; % Copying the body of the parfor loop
 else
     parfor iter_num = 1 : num_iterations
     %for iter_num = 1 : num_iterations
@@ -117,7 +104,7 @@ else
             
             % Correct h(t) estimation if it seems we have delay in AIF
             if Correct_estimation_due_to_delay
-                [Sim_Struct_Replicated(iter_num).est_delay_by_AIF_correct, Sim_Struct_Replicated(iter_num).Sim_AIF_with_noise_Regul_shifted,ht_Struct.b_PCA_larss_result_2nd_deriv, idx_fig_Rep(iter_num)] = ...
+                [Sim_Struct_Replicated(iter_num).est_delay_by_AIF_correct, Sim_Struct_Replicated(iter_num).Sim_AIF_with_noise_Regul_shifted,ht_Struct.Final_Filter_Estimation_Larss, idx_fig_Rep(iter_num)] = ...
                     AIF_Delay_Correct(Sim_Struct_Replicated(iter_num), ht_Struct, Verbosity, iter_num, avg_num, idx_fig_Rep(iter_num));
             end
             
@@ -168,6 +155,8 @@ else
     end
 end
 
+time_finish = toc;
+display(sprintf('-I- Main Loop took %.2f seconds to finish...',time_finish));
 
 % Put the local loop variables in struct
 Sim_Struct.results       = results;

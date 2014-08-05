@@ -1,4 +1,4 @@
-function [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_2nd_deriv,ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_2nd_deriv, idx_fig] = Cyclic_Deconvolve( Sim_Struct, Verbosity, iter_num, avg_num, idx_fig )
+function [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv,ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv, idx_fig] = Cyclic_Deconvolve( Sim_Struct, Verbosity, iter_num, avg_num, idx_fig )
 
 % Take from struct variables used in local function
 Sim_Ct_larss_kernel              = Sim_Struct.Sim_Ct_larss_kernel(:,iter_num,avg_num);
@@ -62,12 +62,12 @@ B_PCA_cyclic = B_mat_cyclic;
 display('-W- NO SUPPRT FOR PCA WHEN USING CYCLIC DECONVOLUTION, USING SPLINES INSTEAD!!!');
 
 % Deconvolution by regularization for gauss filter
-[ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_2nd_deriv, Sim_Struct.idx_fig]...
+[ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv, Sim_Struct.idx_fig]...
     = Regularization_Methods_Simulation(Sim_Ct_gauss_Regul_padded,Sim_Ct_gauss_Regul_noise_padded,Conv_X_cyclic,Conv_X_cyclic_no_noise,time_vec_minutes_padded,...
     lambda_vec_gauss, normalize, min_interval(iter_num), B_mat_cyclic, B_PCA_cyclic, plot_L_Curve, Sim_Struct.idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag );
 
 % Deconvolution by regularization for larsson's filter
-[ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_2nd_deriv, Sim_Struct.idx_fig]...
+[ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv, Sim_Struct.idx_fig]...
     = Regularization_Methods_Simulation(Sim_Ct_larss_Regul_padded,Sim_Ct_larss_Regul_noise_padded,Conv_X_cyclic,Conv_X_cyclic_no_noise,time_vec_minutes_padded,...
     lambda_vec_larss, normalize, min_interval(iter_num), B_mat_cyclic, B_PCA_cyclic,  plot_L_Curve, Sim_Struct.idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
 %
@@ -83,24 +83,28 @@ if Sim_Struct.Cyclic_End_Padding
     b_spline_gauss_result           = b_spline_gauss_result(1:AIF_len);
     b_spline_gauss_result_1st_deriv = b_spline_gauss_result_1st_deriv(1:AIF_len);
     b_spline_gauss_result_2nd_deriv = b_spline_gauss_result_2nd_deriv(1:AIF_len);
+    b_PCA_gauss_result_1st_deriv    = b_PCA_gauss_result_1st_deriv(1:AIF_len);
     b_PCA_gauss_result_2nd_deriv    = b_PCA_gauss_result_2nd_deriv(1:AIF_len);
     
     ridge_regression_larss_result   = ridge_regression_larss_result(1:AIF_len);
     b_spline_larss_result           = b_spline_larss_result(1:AIF_len);
     b_spline_larss_result_1st_deriv = b_spline_larss_result_1st_deriv(1:AIF_len);
     b_spline_larss_result_2nd_deriv = b_spline_larss_result_2nd_deriv(1:AIF_len);
+    b_PCA_larss_result_1st_deriv    = b_PCA_larss_result_1st_deriv(1:AIF_len);
     b_PCA_larss_result_2nd_deriv    = b_PCA_larss_result_2nd_deriv(1:AIF_len);
 else
     ridge_regression_gauss_result   = ridge_regression_gauss_result(AIF_len+1:end);
     b_spline_gauss_result           = b_spline_gauss_result(AIF_len+1:end);
     b_spline_gauss_result_1st_deriv = b_spline_gauss_result_1st_deriv(AIF_len+1:end);
     b_spline_gauss_result_2nd_deriv = b_spline_gauss_result_2nd_deriv(AIF_len+1:end);
+    b_PCA_gauss_result_1st_deriv    = b_PCA_gauss_result_1st_deriv(AIF_len+1:end);
     b_PCA_gauss_result_2nd_deriv    = b_PCA_gauss_result_2nd_deriv(AIF_len+1:end);
     
     ridge_regression_larss_result   = ridge_regression_larss_result(AIF_len+1:end);
     b_spline_larss_result           = b_spline_larss_result(AIF_len+1:end);
     b_spline_larss_result_1st_deriv = b_spline_larss_result_1st_deriv(AIF_len+1:end);
     b_spline_larss_result_2nd_deriv = b_spline_larss_result_2nd_deriv(AIF_len+1:end);
+    b_PCA_larss_result_1st_deriv    = b_PCA_larss_result_1st_deriv(AIF_len+1:end);
     b_PCA_larss_result_2nd_deriv    = b_PCA_larss_result_2nd_deriv(AIF_len+1:end);
 end
 
@@ -156,12 +160,12 @@ if (Use_Upsampling_and_Cyclic)
     display('-W- NO SUPPRT FOR PCA WHEN USING CYCLIC DECONVOLUTION, USING SPLINES INSTEAD!!!');
     
     % Deconvolution by regularization for gauss filter
-    [ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_2nd_deriv, Sim_Struct.idx_fig]...
+    [ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv, Sim_Struct.idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_gauss_Regul_up_samp,Sim_Ct_gauss_Regul_noise_up_samp,Conv_X_up_samp,Conv_X_up_samp_no_noise,time_vec_minutes_up_samp,...
         lambda_vec_gauss, normalize, Upsampling_resolution, B_mat_cyclic_upsmp, B_PCA_cyclic_upsmp, plot_L_Curve, Sim_Struct.idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag );
     
     % Deconvolution by regularization for larsson's filter
-    [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_2nd_deriv, Sim_Struct.idx_fig]...
+    [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv, Sim_Struct.idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_larss_Regul_up_samp,Sim_Ct_larss_Regul_noise_up_samp,Conv_X_up_samp,Conv_X_up_samp_no_noise,time_vec_minutes_up_samp,...
         lambda_vec_larss, normalize, Upsampling_resolution, B_mat_cyclic_upsmp, B_PCA_cyclic_upsmp, plot_L_Curve, Sim_Struct.idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
     
@@ -170,12 +174,14 @@ if (Use_Upsampling_and_Cyclic)
     b_spline_gauss_result           = b_spline_gauss_result(1:AIF_upsmp_len);
     b_spline_gauss_result_1st_deriv = b_spline_gauss_result_1st_deriv(1:AIF_upsmp_len);
     b_spline_gauss_result_2nd_deriv = b_spline_gauss_result_2nd_deriv(1:AIF_upsmp_len);
+    b_PCA_gauss_result_1st_deriv    = b_PCA_gauss_result_1st_deriv(1:AIF_upsmp_len);
     b_PCA_gauss_result_2nd_deriv    = b_PCA_gauss_result_2nd_deriv(1:AIF_upsmp_len);
     
     ridge_regression_larss_result   = ridge_regression_larss_result(1:AIF_upsmp_len);
     b_spline_larss_result           = b_spline_larss_result(1:AIF_upsmp_len);
     b_spline_larss_result_1st_deriv = b_spline_larss_result_1st_deriv(1:AIF_upsmp_len);
     b_spline_larss_result_2nd_deriv = b_spline_larss_result_2nd_deriv(1:AIF_upsmp_len);
+    b_PCA_larss_result_1st_deriv    = b_PCA_larss_result_1st_deriv(1:AIF_upsmp_len);
     b_PCA_larss_result_2nd_deriv    = b_PCA_larss_result_2nd_deriv(1:AIF_upsmp_len);
     
 end

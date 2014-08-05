@@ -7,8 +7,11 @@ function [ Sim_Struct ] = Create_Kernels( Sim_Struct, Verbosity )
 % ------ duplicated to number of iterations                  -------
 % ------------------------------------------------------------------
 
-if strcmp(Verbosity,'Full')
-    display('-I- Starting kernels creation...');
+
+tic;
+
+if ~strcmp(Verbosity,'None')
+    display('-I- Starting Kernels creation...');
 end
 
 % Take from struct variables used in local function
@@ -165,6 +168,11 @@ end
 Sim_Struct.vb_delta               = zeros(size(Sim_Struct.larss_filter));
 Sim_Struct.vb_delta(1,:)          = Sim_Struct.Vb_larss;
 Sim_Struct.Patlak_filter          = Sim_Struct.vb_delta + repmat(Sim_Struct.Ki, [size(Sim_Struct.larss_filter,1) 1]); % [mL/100g/min]
+
+time_finish = toc;
+if ~strcmp(Verbosity,'None')
+    display(sprintf('-I- Creating Kernels took %.2f seconds to finish...',time_finish));
+end
 
 if strcmp(Verbosity,'Full')
     display('-I- Finished kernels creation...');

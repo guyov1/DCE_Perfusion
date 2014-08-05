@@ -218,11 +218,27 @@ results(80)    = est_Ve_Sourbron_Two_Comp_noise_avg;
 results(81)    = ( abs(Ve_larss(iter_num) - est_Ve_Sourbron_Two_Comp_noise_avg) / Ve_larss(iter_num) ) * 100;
 results(82)    = std_Ve_Sourbron;
 
+% Continued Larsson paramters (Ve + absolute error
+
 results(83)    = Ve_larss(iter_num);
 results(84)    = est_Ve_Two_Comp_noise_avg;
 results(85)    = ( abs(Ve_larss(iter_num) - est_Ve_Two_Comp_noise_avg) / Ve_larss(iter_num) ) * 100;
 results(86)    = std_Ve_Two_Comp;
 
+
+results(87)    = abs(F(iter_num)                        - est_F_noise_avg              );
+results(88)    = abs(additional_AIF_delay_sec(iter_num) - est_Delay_sec_noise_avg      );
+results(89)    = abs(Ki(iter_num)                       - est_Ki_Patlak_noise_avg      );
+results(90)    = abs(Ki(iter_num)                       - est_Ki_Two_Comp_noise_avg    );
+results(91)    = abs(PS(iter_num)                       - est_PS_noise_avg             );
+results(92)    = abs(Vb_larss(iter_num)                 - est_Vb_Patlak_noise_avg      );
+results(93)    = abs(Vb_larss(iter_num)                 - est_Vb_Two_Comp_noise_avg    );
+results(94)    = abs(Vd(iter_num)                       - est_Vd_noise_avg             );
+results(95)    = abs(Vd(iter_num)                       - est_Vd_normal_tis_noise_avg  );
+results(96)    = abs(MTT(iter_num)                      - est_MTT_noise_avg            );
+results(97)    = abs(MTT(iter_num)                      - est_MTT_normal_tis_noise_avg );
+results(98)    = abs(E(iter_num)                        - est_E_noise_avg              );
+results(99)    = abs(Ve_larss(iter_num)                 - est_Ve_Two_Comp_noise_avg    );
 
 % Calculate iteration time
 iter_finish = toc;

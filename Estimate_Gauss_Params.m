@@ -18,30 +18,14 @@ ridge_regression_gauss_result   = ht_Struct.ridge_regression_gauss_result;
 b_spline_gauss_result           = ht_Struct.b_spline_gauss_result;
 b_spline_gauss_result_1st_deriv = ht_Struct.b_spline_gauss_result_1st_deriv;
 b_spline_gauss_result_2nd_deriv = ht_Struct.b_spline_gauss_result_2nd_deriv;
+b_PCA_gauss_result_1st_deriv    = ht_Struct.b_PCA_gauss_result_1st_deriv;
 b_PCA_gauss_result_2nd_deriv    = ht_Struct.b_PCA_gauss_result_2nd_deriv;
 
+Final_Filter_Estimation_Gauss   = ht_struct.Final_Filter_Estimation_Gauss;
   
 
 if strcmp(Verbosity,'Full')
     display('-I- Estimating Gaussian parameters...');
-end
-
-% Choose which filter estimation to use
-switch Filter_Est_Chosen
-    case 'Wiener'
-        Final_Filter_Estimation_Gauss = est_gauss_filter_Wiener_noise';
-    case 'Ridge'
-        Final_Filter_Estimation_Gauss = ridge_regression_gauss_result;
-    case 'Spline'
-        Final_Filter_Estimation_Gauss = b_spline_gauss_result;
-    case 'Spline_1st'
-        Final_Filter_Estimation_Gauss = b_spline_gauss_result_1st_deriv;
-    case 'Spline_2nd'
-        Final_Filter_Estimation_Gauss = b_spline_gauss_result_2nd_deriv;
-    case 'PCA'
-        Final_Filter_Estimation_Gauss = b_PCA_gauss_result_2nd_deriv;
-    otherwise
-        error('Unrecognized filter estimation method!');
 end
 
 % lsqcurvefit parameters are:

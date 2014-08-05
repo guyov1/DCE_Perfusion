@@ -1,5 +1,4 @@
 for iter_num = 1 : num_iterations
-%for iter_num = 1 : num_iterations
     
     % Calculate iteration time
     tic;
@@ -33,12 +32,13 @@ for iter_num = 1 : num_iterations
         
         %% Estimating h(t) by Wiener filter
         [Sim_Struct_Replicated(iter_num).est_gauss_filter_Wiener_noise, Sim_Struct_Replicated(iter_num).est_larss_filter_Wiener_noise,idx_fig_Rep(iter_num) ] = Estimate_ht_Wiener(Sim_Struct_Replicated(iter_num), Verbosity, iter_num, avg_num, idx_fig_Rep(iter_num));
+        
         %%  Estimating h(t) by regularization methods
         [ht_Struct, idx_fig_Rep(iter_num)] = Estimate_ht_Regularization(Sim_Struct_Replicated(iter_num), Verbosity, iter_num, avg_num, idx_fig_Rep(iter_num));
         
         % Correct h(t) estimation if it seems we have delay in AIF
         if Correct_estimation_due_to_delay
-            [Sim_Struct_Replicated(iter_num).est_delay_by_AIF_correct, Sim_Struct_Replicated(iter_num).Sim_AIF_with_noise_Regul_shifted,ht_Struct.b_spline_larss_result_2nd_deriv, idx_fig_Rep(iter_num)] = ...
+            [Sim_Struct_Replicated(iter_num).est_delay_by_AIF_correct, Sim_Struct_Replicated(iter_num).Sim_AIF_with_noise_Regul_shifted,ht_Struct.Final_Filter_Estimation_Larss, idx_fig_Rep(iter_num)] = ...
                 AIF_Delay_Correct(Sim_Struct_Replicated(iter_num), ht_Struct, Verbosity, iter_num, avg_num, idx_fig_Rep(iter_num));
         end
         

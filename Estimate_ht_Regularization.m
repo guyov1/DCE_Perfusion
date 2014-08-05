@@ -20,6 +20,8 @@ plot_L_Curve                    = Sim_Struct.plot_L_Curve;
 Derivative_Time_Devision        = Sim_Struct.Derivative_Time_Devision;
 plot_flag                       = Sim_Struct.plot_flag;
 lambda_vec_larss                = Sim_Struct.lambda_vec_larss;
+est_larss_filter_Wiener_noise   = Sim_Struct.est_larss_filter_Wiener_noise;
+Filter_Est_Chosen               = Sim_Struct.Filter_Est_Chosen;
 
 if strcmp(Verbosity,'Full')
     display('-I- Estimating h(t) using Regularization...');
@@ -48,8 +50,8 @@ Sim_Struct.Sim_AIF_with_noise_Regul = Sim_AIF_with_noise_Regul;
 
 if Use_Cyclic_Conv_4_ht_est
     % Cyclic de-convolution
-    [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_2nd_deriv,...
-     ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_2nd_deriv,...
+    [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv,...
+     ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv,...
      idx_fig] = Cyclic_Deconvolve( Sim_Struct, Verbosity, iter_num, avg_num, idx_fig );
     
 elseif Use_Upsampling_Delay_Comp
@@ -60,16 +62,18 @@ else
     % Regular de-convolution, no correction for delay
     
     % Deconvolution by regularization for gauss filter
-    [ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result_2nd_deriv, idx_fig]...
+    [ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv, idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_gauss_Regul, Sim_Ct_gauss_Regul_noise,Conv_X,Conv_X_no_noise,time_vec_minutes,...
         lambda_vec_gauss, normalize, min_interval(iter_num), B_mat, PCA_B_mat, plot_L_Curve, idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag );
     
     % Deconvolution by regularization for larsson's filter
-    [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result_2nd_deriv, idx_fig]...
+    [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv, idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise,Conv_X,Conv_X_no_noise,time_vec_minutes,...
         lambda_vec_larss, normalize, min_interval(iter_num), B_mat, PCA_B_mat, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
     
 end
+
+[ Final_Filter_Estimation_Larss ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv);
 
 % Return vars
 Return_Struct.Sim_AIF_no_noise_Regul           = Sim_AIF_no_noise_Regul;
@@ -79,6 +83,7 @@ Return_Struct.ridge_regression_larss_result    = ridge_regression_larss_result;
 Return_Struct.b_spline_gauss_result            = b_spline_gauss_result;
 Return_Struct.b_spline_gauss_result_1st_deriv  = b_spline_gauss_result_1st_deriv;
 Return_Struct.b_spline_gauss_result_2nd_deriv  = b_spline_gauss_result_2nd_deriv;
+Return_Struct.b_PCA_gauss_result_1st_deriv     = b_PCA_gauss_result_1st_deriv;
 Return_Struct.b_PCA_gauss_result_2nd_deriv     = b_PCA_gauss_result_2nd_deriv;
 Return_Struct.Sim_Ct_larss_Regul               = Sim_Ct_larss_Regul;
 Return_Struct.Sim_Ct_larss_Regul_noise         = Sim_Ct_larss_Regul_noise;
@@ -89,6 +94,9 @@ Return_Struct.idx_fig                          = idx_fig;
 Return_Struct.b_spline_larss_result            = b_spline_larss_result;
 Return_Struct.b_spline_larss_result_1st_deriv  = b_spline_larss_result_1st_deriv;
 Return_Struct.b_spline_larss_result_2nd_deriv  = b_spline_larss_result_2nd_deriv;
+Return_Struct.b_PCA_larss_result               = b_PCA_larss_result;
+Return_Struct.b_PCA_larss_result_1st_deriv     = b_PCA_larss_result_1st_deriv;
 Return_Struct.b_PCA_larss_result_2nd_deriv     = b_PCA_larss_result_2nd_deriv;
+Return_Struct.Final_Filter_Estimation_Larss    = Final_Filter_Estimation_Larss;
 
 end

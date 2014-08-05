@@ -48,30 +48,14 @@ ridge_regression_larss_result   = ht_Struct.ridge_regression_larss_result;
 b_spline_larss_result           = ht_Struct.b_spline_larss_result;
 b_spline_larss_result_1st_deriv = ht_Struct.b_spline_larss_result_1st_deriv;
 b_spline_larss_result_2nd_deriv = ht_Struct.b_spline_larss_result_2nd_deriv;
+b_PCA_larss_result              = ht_Struct.b_PCA_larss_result;
+b_PCA_larss_result_1st_deriv    = ht_Struct.b_PCA_larss_result_1st_deriv;
 b_PCA_larss_result_2nd_deriv    = ht_Struct.b_PCA_larss_result_2nd_deriv;
 
-   
+Final_Filter_Estimation_Larss   = ht_Struct.Final_Filter_Estimation_Larss;
     
 if strcmp(Verbosity,'Full')
     display('-I- Estimating Larsson parameters...');
-end
-
-% Choose which filter estimation to use
-switch Filter_Est_Chosen
-    case 'Wiener'
-        Final_Filter_Estimation_Larss = est_larss_filter_Wiener_noise';
-    case 'Ridge'
-        Final_Filter_Estimation_Larss = ridge_regression_larss_result;
-    case 'Spline'
-        Final_Filter_Estimation_Larss = b_spline_larss_result;
-    case 'Spline_1st'
-        Final_Filter_Estimation_Larss = b_spline_larss_result_1st_deriv;
-    case 'Spline_2nd'
-        Final_Filter_Estimation_Larss = b_spline_larss_result_2nd_deriv;
-    case 'PCA'
-        Final_Filter_Estimation_Larss = b_PCA_larss_result_2nd_deriv;
-    otherwise
-        error('Unrecognized filter estimation method!');
 end
 
 
@@ -306,14 +290,16 @@ end
 
 if (plot_flag)
     % Check to see if one of the filters explodes and will ruin visualization
-    All_filters           = zeros(7,max(size(larss_filter)));
+    All_filters           = zeros(9,max(size(larss_filter)));
     All_filters(1,:)      = larss_filter;
     All_filters(2,:)      = est_larss_filter_Wiener_noise;
     All_filters(3,:)      = ridge_regression_larss_result;
     All_filters(4,:)      = b_spline_larss_result;
     All_filters(5,:)      = b_spline_larss_result_1st_deriv;
     All_filters(6,:)      = b_spline_larss_result_2nd_deriv;
-    All_filters(7,:)      = b_PCA_larss_result_2nd_deriv;
+    All_filters(7,:)      = b_PCA_larss_result;
+    All_filters(8,:)      = b_PCA_larss_result_1st_deriv;
+    All_filters(9,:)      = b_PCA_larss_result_2nd_deriv;
     Max_values            = max(All_filters,[],2);
     Max_original          = max(larss_filter);
     Bad_indices           = find(Max_values > 5*Max_original);
@@ -335,8 +321,12 @@ if (plot_flag)
     h10 = plot(time_vec_minutes,All_filters(5,:),'md');
     h11 = plot(time_vec_minutes,All_filters(6,:) ,'r');
     h12 = plot(time_vec_minutes,All_filters(6,:) ,'rs');
-    h13 = plot(time_vec_minutes,All_filters(7,:) ,'y');
-    h14 = plot(time_vec_minutes,All_filters(7,:) ,'yh');
+    h13 = plot(time_vec_minutes,All_filters(7,:) ,'b--');
+    h14 = plot(time_vec_minutes,All_filters(7,:) ,'bh');
+    h15 = plot(time_vec_minutes,All_filters(8,:) ,'k--');
+    h16 = plot(time_vec_minutes,All_filters(8,:) ,'kh');
+    h17 = plot(time_vec_minutes,All_filters(9,:) ,'y');
+    h18 = plot(time_vec_minutes,All_filters(9,:) ,'yh');
     
     % Warn in the title in case one filter exploded
     if (isempty(Bad_indices))
@@ -347,18 +337,20 @@ if (plot_flag)
     
     xlabel('Time [Min]');
     hold off;
-    legend([h2 h4 h6 h8 h10 h12 h14],'Orig. h(t)',...
-        'Est. h(t) - Wiener','Est. h(t) - Ridge','Est. h(t) - Spline','Est. h(t) - Spline 1st deriv','Est. h(t) - Spline 2nd deriv','Est. h(t) - PCA 2nd deriv');
+    legend([h2 h4 h6 h8 h10 h12 h14 h16 h18],'Orig. h(t)',...
+        'Est. h(t) - Wiener','Est. h(t) - Ridge','Est. h(t) - Spline','Est. h(t) - Spline 1st deriv','Est. h(t) - Spline 2nd deriv','Est. h(t) - PCA','Est. h(t) - PCA 1st deriv','Est. h(t) - PCA 2nd deriv');
     
     subplot(2,1,2);
     hold on;
     
-    AIF_filtered_by_est_larrson  = filter(est_larss_filter_Wiener_noise*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
-    AIF_filtered_by_est_ridge    = filter(ridge_regression_larss_result*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
-    AIF_filtered_by_est_spline_1 = filter(b_spline_larss_result*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
-    AIF_filtered_by_est_spline_2 = filter(b_spline_larss_result_1st_deriv*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
-    AIF_filtered_by_est_spline_3 = filter(b_spline_larss_result_2nd_deriv*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
-    AIF_filtered_by_est_spline_4 = filter(b_PCA_larss_result_2nd_deriv*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_larrson          = filter(est_larss_filter_Wiener_noise*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_ridge            = filter(ridge_regression_larss_result*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_spline_no_deriv  = filter(b_spline_larss_result*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_spline_1st_deriv = filter(b_spline_larss_result_1st_deriv*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_spline_2nd_deriv = filter(b_spline_larss_result_2nd_deriv*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_PCA              = filter(b_PCA_larss_result*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_PCA_1st_deriv    = filter(b_PCA_larss_result_1st_deriv*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
+    AIF_filtered_by_est_PCA_2nd_deriv    = filter(b_PCA_larss_result_2nd_deriv*min_interval,1,Sim_AIF_with_noise(:,iter_num,avg_num));
     
     h1  = plot(time_vec_minutes,Sim_Ct_larss_kernel_noise,'g');
     h2  = plot(time_vec_minutes,Sim_Ct_larss_kernel_noise,'g*');
@@ -366,20 +358,24 @@ if (plot_flag)
     h4  = plot(time_vec_minutes,AIF_filtered_by_est_larrson,'b+');
     h5  = plot(time_vec_minutes,AIF_filtered_by_est_ridge,'k');
     h6  = plot(time_vec_minutes,AIF_filtered_by_est_ridge,'ko');
-    h7  = plot(time_vec_minutes,AIF_filtered_by_est_spline_1,'c');
-    h8  = plot(time_vec_minutes,AIF_filtered_by_est_spline_1,'cx');
-    h9  = plot(time_vec_minutes,AIF_filtered_by_est_spline_2,'m');
-    h10 = plot(time_vec_minutes,AIF_filtered_by_est_spline_2,'md');
-    h11 = plot(time_vec_minutes,AIF_filtered_by_est_spline_3,'r');
-    h12 = plot(time_vec_minutes,AIF_filtered_by_est_spline_3,'rs');
-    h13 = plot(time_vec_minutes,AIF_filtered_by_est_spline_4,'y');
-    h14 = plot(time_vec_minutes,AIF_filtered_by_est_spline_4,'yh');
+    h7  = plot(time_vec_minutes,AIF_filtered_by_est_spline_no_deriv,'c');
+    h8  = plot(time_vec_minutes,AIF_filtered_by_est_spline_no_deriv,'cx');
+    h9  = plot(time_vec_minutes,AIF_filtered_by_est_spline_1st_deriv,'m');
+    h10 = plot(time_vec_minutes,AIF_filtered_by_est_spline_1st_deriv,'md');
+    h11 = plot(time_vec_minutes,AIF_filtered_by_est_spline_2nd_deriv,'r');
+    h12 = plot(time_vec_minutes,AIF_filtered_by_est_spline_2nd_deriv,'rs');
+    h13 = plot(time_vec_minutes,AIF_filtered_by_est_PCA ,'b--');
+    h14 = plot(time_vec_minutes,AIF_filtered_by_est_PCA ,'bh');
+    h15 = plot(time_vec_minutes,AIF_filtered_by_est_PCA_1st_deriv,'k--');
+    h16 = plot(time_vec_minutes,AIF_filtered_by_est_PCA_1st_deriv,'kh');
+    h17 = plot(time_vec_minutes,AIF_filtered_by_est_PCA_2nd_deriv,'y');
+    h18 = plot(time_vec_minutes,AIF_filtered_by_est_PCA_2nd_deriv,'yh');
     
     title('Original and estimated Ct(t)','FontWeight','bold');
     xlabel('Time [Min]');
     hold off;
-    legend([h2 h4 h6 h8 h10 h12 h14],'Orig. h(t)',...
-        'Est. Ct(t) - Wiener','Est. Ct(t) - Ridge','Est. Ct(t) - Spline','Est. Ct(t) - Spline 1st deriv','Est. Ct(t) - Spline 2nd deriv','Est. Ct(t) - PCA 2nd deriv');
+    legend([h2 h4 h6 h8 h10 h12 h14 h16 h18],'Orig. h(t)',...
+        'Est. Ct(t) - Wiener','Est. Ct(t) - Ridge','Est. Ct(t) - Spline','Est. Ct(t) - Spline 1st deriv','Est. Ct(t) - Spline 2nd deriv','Est. Ct(t) - PCA','Est. Ct(t) - PCA 1st deriv','Est. Ct(t) - PCA 2nd deriv');
     
     % Print result to PDF
     [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Est_Filters_Larss.png', './Run_Output/',...

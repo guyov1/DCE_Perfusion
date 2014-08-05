@@ -1,4 +1,4 @@
-function [ est_delay_by_AIF_correct, Sim_AIF_with_noise_Regul_shifted,b_spline_larss_result_2nd_deriv, idx_fig ] = AIF_Delay_Correct( Sim_Struct, ht_Struct, Verbosity, iter_num, avg_num, idx_fig)
+function [ est_delay_by_AIF_correct, Sim_AIF_with_noise_Regul_shifted, Final_Filter_Estimation_Larss, idx_fig ] = AIF_Delay_Correct( Sim_Struct, ht_Struct, Verbosity, iter_num, avg_num, idx_fig)
 
 % Take from struct variables used in local function
 normalize                       = Sim_Struct.normalize;
@@ -24,7 +24,7 @@ BiExp2CTC_RMS_Ratio             = Sim_Struct.BiExp2CTC_RMS_Ratio;
 plot_flag                       = Sim_Struct.plot_flag; 
 adjusted_larsson                = Sim_Struct.Adjusted_Larsson_Model;
 
-b_spline_larss_result_2nd_deriv = ht_Struct.b_spline_larss_result_2nd_deriv;
+Final_Filter_Estimation_Larss   = ht_Struct.Final_Filter_Estimation_Larss;
 Sim_AIF_with_noise_Regul        = ht_Struct.Sim_AIF_with_noise_Regul;
 Sim_Ct_larss_Regul              = ht_Struct.Sim_Ct_larss_Regul;
 Sim_Ct_larss_Regul_noise        = ht_Struct.Sim_Ct_larss_Regul_noise;
@@ -33,21 +33,22 @@ Conv_X_no_noise                 = ht_Struct.Conv_X_no_noise;
 % ---------------------------------------------------------------------
 %                 Regular correction by looking on h(t) shift
 % ---------------------------------------------------------------------
-est_delay_by_spline_result       = NaN; % Initiate with NaN
+est_simple_delay       = NaN; % Initiate with NaN
+
 if Sim_Struct.Simple_AIF_Delay_Correct
     
-    [~, max_idx] = max(b_spline_larss_result_2nd_deriv);
+    [~, max_idx] = max(Final_Filter_Estimation_Larss);
     
     % If the maximum is not the first value, we might think there is a delay
     if (max_idx ~= 1)
         
-        [peak_val, peak_idx]       = findpeaks(b_spline_larss_result_2nd_deriv);
+        [peak_val, peak_idx]       = findpeaks(Final_Filter_Estimation_Larss);
         
         % We expect a peak in case of delay
         if ~isempty(peak_idx)
             
             % The estimated delay in minutes
-            est_delay_by_spline_result                   = time_vec_minutes(peak_idx(1));
+            est_simple_delay                   = time_vec_minutes(peak_idx(1));
             
             % Shift the AIF according to estimation
             shift_index                                             = peak_idx(1);
@@ -58,13 +59,21 @@ if Sim_Struct.Simple_AIF_Delay_Correct
             % Create new convolution matrix for
             [ Conv_X_shifted ] = Convolution_Matrix( min_interval, Sim_AIF_with_noise_Regul_shifted );
             
-            [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_gauss_result_2nd_deriv, idx_fig]...
+            
+            [ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig]...
                 = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise,Conv_X_shifted,Conv_X_no_noise,time_vec_minutes,...
                 lambda_vec_larss, normalize, min_interval, B_mat, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
+           
+            [ Final_Filter_Estimation_Larss ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
             
         end
-        
+    else
+        est_simple_delay = 0; % If the maximum is the first delay, there is no delay
     end
+    
+    est_delay_by_AIF_correct = est_simple_delay;
+    
+    return;
     
     % ---------------------------------------------------------------------
     %                 Correction by setting multiple optional time delays
@@ -95,7 +104,7 @@ else
     num_shifts       = length(shift_times);
     
     % Initiate shifts matrices results
-    CTC_size         = length(b_spline_larss_result_2nd_deriv);
+    CTC_size         = length(Final_Filter_Estimation_Larss);
     Rms_errors_CTC   = zeros(1,num_shifts);
     Est_CTCs         = zeros(CTC_size,num_shifts);
     Rms_errors_BiExp = zeros(1,num_shifts);
@@ -153,10 +162,12 @@ else
             
         
             % Deconvolution by regularization for larsson's filter
-            [~, ~, ~, ~, Spline_est(:,i), idx_fig]...
+            [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
                 = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_modified,Conv_X_shift_modified,Conv_X_no_noise,time_vec_minutes_modified,...
                 lambda_vec_larss, normalize, min_interval, B_mat_modified, B_PCA, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0 );
             
+            [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
+
             %% Estimate Patlak parameters for initial guess
             AIF                   = Sim_AIF_with_noise_Regul_shifted;
             Y_vec_Vb              = Sim_Ct_larss_Regul ./ AIF;                        %[mL/100g]
@@ -267,12 +278,15 @@ else
             B_mat_upsmp = Create_B_matrix(knots,time_vec_minutes_upsmp,poly_deg-1);
             
             % Deconvolution by regularization for larsson's filter
-            [~, ~, ~, ~, Spline_est(:,i), idx_fig]...
+            [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
                 = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_upsmp,Conv_X_shift_upsmp,Conv_X_no_noise,time_vec_minutes_upsmp,...
                 lambda_vec_larss, normalize, min_interval, B_mat_upsmp, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0 );
             
+            [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
+            
+            
             % Check min RMS for possible time shifts to determine if one exists
-            Result = Conv_X_shift_upsmp * b_spline_larss_result_2nd_deriv;
+            Result = Conv_X_shift_upsmp * Final_Filter_Estimation_Larss;
             
             %figure;plot(Sim_Ct_larss_Regul_noise,'b');hold on;plot(Result,'r');hold off;
             %figure;plot(b_spline_larss_result_2nd_deriv);title(['Time Shift: ' num2str(shift_times(i)*60) ]);
@@ -432,7 +446,7 @@ end
 %display('');figure;plot(time_vec_minutes,Spline_est(:,28));hold on; plot(time_vec_minutes,exp_fit(:,28),'r');hold off;
 
 % Assign the new spline after fixing for delay
-b_spline_larss_result_2nd_deriv = Spline_est(:,min_idx);
+Final_Filter_Estimation_Larss = Spline_est(:,min_idx);
 
 
 end

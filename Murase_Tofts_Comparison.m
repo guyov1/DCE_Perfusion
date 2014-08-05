@@ -1,7 +1,7 @@
 function [ Sim_Struct ] = Murase_Tofts_Comparison( Sim_Struct, Verbosity )
 
 
-if strcmp(Verbosity,'Full')
+if ~strcmp(Verbosity,'None')
     display('-I- Starting Murase/Tofts Comparison...');
 end
 

@@ -1,6 +1,8 @@
 function [ Sim_Struct ] = Filter_AIF( Sim_Struct, Verbosity )
 
-if strcmp(Verbosity,'Full')
+tic;
+
+if ~strcmp(Verbosity,'None')
     display('-I- Starting filtering AIFs...');
 end
 
@@ -37,32 +39,7 @@ noise_to_add_gauss  = zeros(size(Sim_AIF_delayed_no_noise));
 noise_to_add_larss  = zeros(size(Sim_AIF_delayed_no_noise));
 
 % Filter each Ca(t) and add noise
-parfor i = 1:num_iterations
-    for j = 1 : num_averages
-        
-        %% Filter in high resolution, then subsample
-        
-        High_2_Low_factor          = min_interval(i) / High_res_min;
-        % Filter the delayed AIF with the gaussian kernel
-        Temp_Ct_gauss_kernel       = filter(gauss_filter_HighRes(:,i)*High_res_min,1,Sim_AIF_HighRes_delayed_no_noise(:,i,j));
-        % Filter the delayed AIF with Larsson's kernel
-        Temp_Ct_larss_kernel       = filter(larss_filter_HighRes(:,i)*High_res_min,1,Sim_AIF_HighRes_delayed_no_noise(:,i,j));
-        Sim_Ct_gauss_kernel(:,i,j) = downsample(Temp_Ct_gauss_kernel,High_2_Low_factor); %[mM]
-        Sim_Ct_larss_kernel(:,i,j) = downsample(Temp_Ct_larss_kernel,High_2_Low_factor); %[mM]
-        
-%         % Filter the delayed AIF with the gaussian kernel
-%         Sim_Ct_gauss_kernel(:,i,j) = filter(gauss_filter(:,i)*min_interval(i),1,Sim_AIF_delayed_no_noise(:,i,j));
-%         % Filter the delayed AIF with Larsson's kernel
-%         Sim_Ct_larss_kernel(:,i,j) = filter(larss_filter(:,i)*min_interval(i),1,Sim_AIF_delayed_no_noise(:,i,j));
-        
-        % Adding noise to simulated Ct(t) from both kernels
-        noise_sigma_gauss         = mean(Sim_Ct_gauss_kernel(:,i,j)) ./ SNR_ratio(i);
-        noise_to_add_gauss(:,i,j) = noise_sigma_gauss * randn(size(Sim_Ct_gauss_kernel(:,i,j)));
-        noise_sigma_larss         = mean(Sim_Ct_larss_kernel(:,i,j))/SNR_ratio(i);
-        noise_to_add_larss(:,i,j) = noise_sigma_larss * randn(size(Sim_Ct_larss_kernel(:,i,j)));
-        
-    end
-end
+[Sim_Ct_gauss_kernel, Sim_Ct_larss_kernel, noise_to_add_gauss, noise_to_add_larss] = Filter_AIF_Process(Sim_Struct, Sim_Ct_gauss_kernel, Sim_Ct_larss_kernel, noise_to_add_gauss, noise_to_add_larss);
 
 Sim_Ct_gauss_kernel_noise = Sim_Ct_gauss_kernel + noise_to_add_gauss;
 Sim_Ct_larss_kernel_noise = Sim_Ct_larss_kernel + noise_to_add_larss;
@@ -89,10 +66,10 @@ if (plot_flag)
     fig_num = figure;
     subplot(3,2,1);
     hold on;
-%     h1 = plot(time_vec_minutes,Sim_AIF_no_noise(:,iter_display,iter_display),'r');
-%     h2 = plot(time_vec_minutes,Sim_AIF_no_noise(:,iter_display,iter_display),'r*');
-%     h3 = plot(time_vec_minutes,Sim_AIF_with_noise(:,iter_display,iter_display),'b');
-%     h4 = plot(time_vec_minutes,Sim_AIF_with_noise(:,iter_display,iter_display),'bd');
+    %     h1 = plot(time_vec_minutes,Sim_AIF_no_noise(:,iter_display,iter_display),'r');
+    %     h2 = plot(time_vec_minutes,Sim_AIF_no_noise(:,iter_display,iter_display),'r*');
+    %     h3 = plot(time_vec_minutes,Sim_AIF_with_noise(:,iter_display,iter_display),'b');
+    %     h4 = plot(time_vec_minutes,Sim_AIF_with_noise(:,iter_display,iter_display),'bd');
     h1 = plot(time_vec_minutes,Sim_AIF_delayed_no_noise(:,iter_display,iter_display),'r');
     h2 = plot(time_vec_minutes,Sim_AIF_delayed_no_noise(:,iter_display,iter_display),'r*');
     h3 = plot(time_vec_minutes,Sim_AIF_with_noise(:,iter_display,iter_display),'b');
@@ -184,6 +161,11 @@ if (plot_flag)
     [Sim_Struct.idx_fig] = Print2Pdf(fig_num, Sim_Struct.idx_fig, 'Sim_AIF_Filters_Output.png', './Run_Output/',...
         'Sim AIF, Filters and Cts', 'SimulationGraphs');
     
+end
+
+time_finish = toc;
+if ~strcmp(Verbosity,'None')
+    display(sprintf('-I- Filtering AIF took %.2f seconds to finish...',time_finish));
 end
 
 if strcmp(Verbosity,'Full')

@@ -6,7 +6,7 @@ num_iterations               = Sim_Struct.num_iterations;
 additional_AIF_delay_sec_vec = Sim_Struct.additional_AIF_delay_sec_vec;
 num_averages                 = Sim_Struct.num_averages;
 
-if strcmp(Verbosity,'Full')
+if ~strcmp(Verbosity,'None')
     display('-I- Initiating iteration parameters...');
 end
 
@@ -64,14 +64,13 @@ end
 Sim_Struct.B_mat      = Create_B_matrix(Sim_Struct.knots,Sim_Struct.time_vec_minutes,Sim_Struct.poly_deg-1);
 
 % PCA Splines
-file_to_load          = ['./Utils/Alt_Basis_' num2str(Sim_Struct.sec_interval(1)) '_sec' '.mat'];
+file_to_load          = ['./Utils/Alt_Basis_' num2str(Sim_Struct.sec_interval(1)) '_sec_Total_' num2str(Sim_Struct.total_sim_time_min) '_min' '.mat'];
 if( exist(file_to_load,'file') )
     temp                  = load(file_to_load);
 else
-    PCA_basis(Sim_Struct.sec_interval(1));
+    PCA_basis(Sim_Struct);
     temp                  = load(file_to_load);
 end
-
 
 Basis_Mat             = temp.B_check;
 num_cols_B_mat        = size(Sim_Struct.B_mat,2);
