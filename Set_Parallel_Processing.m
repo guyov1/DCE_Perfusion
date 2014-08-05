@@ -56,7 +56,7 @@ if ( (Sim_Struct.num_iterations > 1) || ~Sim_Struct.FORCE_SERIAL || ~Sim_Struct.
     
     myPool  = gcp;
     myFiles = {'Summarize_Iteration.m', 'Estimate_ht_Wiener.m', 'Simulation.m', ...
-               'Print2Pdf.m', 'gprint.m', 'AddToLog.m', 'Regularized_Sol.m', 'AIF_Parker.m', 'ReScale_AIF.m'};
+               'Print2Pdf.m', 'gprint.m', 'AddToLog.m', 'Regularized_Sol.m', 'AIF_Parker.m', 'ReScale_AIF.m', 'Choose_Needed_Ht.m'};
     addAttachedFiles(myPool, myFiles);
     
     if strcmp(Verbosity,'Full')

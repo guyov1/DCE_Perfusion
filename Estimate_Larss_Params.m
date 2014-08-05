@@ -32,7 +32,7 @@ larss_filter                    = Sim_Struct.larss_filter;
 Correct_estimation_due_to_delay = Sim_Struct.Correct_estimation_due_to_delay;
 est_delay_by_AIF_correct        = Sim_Struct.est_delay_by_AIF_correct;
 Check_Sourbron_Estimate         = Sim_Struct.Check_Sourbron_Estimate;
-Random_init_F_guess             = Sim_Struct.Random_init_F_guess;
+Random_init_F_guess_4_Sourbron  = Sim_Struct.Random_init_F_guess_4_Sourbron;
 adjusted_larsson                = Sim_Struct.Adjusted_Larsson_Model;
 F_low                           = Sim_Struct.F_low;
 F_max                           = Sim_Struct.F_max;
@@ -191,7 +191,7 @@ if strcmp(FMS_Algorithm,'trust-region-reflective')
     if Check_Sourbron_Estimate
         
         % Gues initial F randomly
-        if (Random_init_F_guess)
+        if (Random_init_F_guess_4_Sourbron)
             F_init_guess        = rand*100;
         else
             F_init_guess        = est_F_noise;
@@ -227,7 +227,7 @@ elseif strcmp(FMS_Algorithm,'levenberg-marquardt')
     if Check_Sourbron_Estimate
         
         % Gues initial F randomly
-        if (Random_init_F_guess)
+        if (Random_init_F_guess_4_Sourbron)
             F_init_guess        = rand*100;
         else
             F_init_guess        = est_F_noise;
