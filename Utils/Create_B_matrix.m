@@ -6,6 +6,7 @@ function [ B ] = Create_B_matrix(knots,time_vec,poly_deg)
 %   time_vec - time points for the function to be evaluated
 %   poly_deg - polynomial degree
     
+    display('-I- Creating splines basis matrix...');
         
     K = max(size(knots));
     N = max(size(time_vec));

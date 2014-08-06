@@ -595,7 +595,7 @@ if (plot_error_results_flag)
         h2 = errorbar(real_t_d_Larss_vec_sec,error_percent_Sourbron_F,std_Sourbron_F,'r');
         
         hold off;
-        legend([h1 h2], 'Devonc.', '4 params fit');
+        legend([h1 h2], 'Deconv.', '4 params fit');
         title_string = sprintf('est. F error vs. AIF Delay. Vb=%d, E=%.2f, F=%.2f',Vb_single,E_single,real_larsson_F_vec(1));
         title(title_string,'FontSize',font_size,'FontWeight','bold');
         xlabel('AIF delay [Sec]');
@@ -603,6 +603,20 @@ if (plot_error_results_flag)
         
         % Print result to PDF
         [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Est_Error_Analysis_Larsson_F_Vs_AIF_Delay.png', './Run_Output/',...
+            'est. Error Analysis - Est. Larsson Flow error Vs. AIF Delay', 'EstErrorAnalysis');
+        
+        fig_num = figure;
+        
+        %plot(real_sigma_vec,error_percent_sigma);
+        h1 = errorbar(real_t_d_Larss_vec_sec,error_percent_F,std_F);
+        legend([h1], 'Deconv.');
+        title_string = sprintf('est. F error vs. AIF Delay. Vb=%d, E=%.2f, F=%.2f',Vb_single,E_single,real_larsson_F_vec(1));
+        title(title_string,'FontSize',font_size,'FontWeight','bold');
+        xlabel('AIF delay [Sec]');
+        ylabel('Error percent');
+        
+        % Print result to PDF
+        [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Est_Error_Analysis_Larsson_F_Vs_AIF_Delay_1.png', './Run_Output/',...
             'est. Error Analysis - Est. Larsson Flow error Vs. AIF Delay', 'EstErrorAnalysis');
         
         

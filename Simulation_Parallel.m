@@ -1,4 +1,4 @@
-for iter_num = 1 : num_iterations
+parfor iter_num = 1 : num_iterations
     %for iter_num = 1 : num_iterations
     
     % Calculate iteration time

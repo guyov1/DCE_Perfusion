@@ -10,7 +10,7 @@ Sim_Struct.FORCE_MAIN_LOOP_SERIAL        = false;
 % Set number of iterations for simulation
 Sim_Struct.num_iterations                = 15; %15
 % Do each iteration a few time and average results for better statistic information
-Sim_Struct.num_averages                  = 10; %5
+Sim_Struct.num_averages                  = 5; %5
 % Determines SNR ( noise_var = mean(signal)/SNR_base )
 Sim_Struct.SNR_single                    = 15;
 Sim_Struct.SNR_vec                       = linspace(20,1,Sim_Struct.num_iterations);
@@ -20,18 +20,18 @@ Sim_Struct.iterate_sec_interval          = 0; % Problematic (different array siz
 Sim_Struct.iterate_gaussian_sigma        = 0;
 Sim_Struct.iterate_gaussian_time_delay   = 0;
 Sim_Struct.iterate_gaussian_amplitude    = 0;
-Sim_Struct.iterate_F_larsson             = 1;
+Sim_Struct.iterate_F_larsson             = 0;
 Sim_Struct.iterate_Vb_larsson            = 0;
 Sim_Struct.iterate_E_larsson             = 0;
 Sim_Struct.iterate_Ve_larsson            = 0;
-Sim_Struct.iterate_AIF_delay             = 0;
+Sim_Struct.iterate_AIF_delay             = 1;
 Sim_Struct.iterate_uniformly             = 0; % Uniformly generate parameters data
 % Choose which Patlak estimation to take
 % Possible - 1. "Specified Points" 2. "All Points" 3. "Weighted Points"
 Sim_Struct.Patlak_Est                    = 'Specified Points';
 % Choose which filter estimation to use when calculating parameters (non-linear method)
 % Possible: 'Wiener', 'Ridge', 'Spline', 'Spline_1st', 'Spline_2nd', 'PCA', 'PCA_1st', 'PCA_2nd'
-Sim_Struct.Filter_Est_Chosen             = 'Spline_1st';
+Sim_Struct.Filter_Est_Chosen             = 'Spline';
 % Number of iterations for PCA basis creation
 Sim_Struct.Num_iterations_PCA            = 100000; 
 % Use the adjusted Larsson filter
@@ -95,8 +95,8 @@ Sim_Struct.s        = 38.078;
 Sim_Struct.tau      = 0.483;
 
 % Apply cyclic convolution to compensate for AIF delay
-Sim_Struct.Use_Cyclic_Conv_4_ht_est               = false;      % Use cyclic de-convolution to correct for delay
-Sim_Struct.Cyclic_End_Padding                     = false;     % Pad at the beginning or end
+Sim_Struct.Use_Cyclic_Conv_4_ht_est               = true;      % Use cyclic de-convolution to correct for delay
+Sim_Struct.Cyclic_End_Padding                     = true;     % Pad at the beginning or end
 Sim_Struct.Use_Upsampling_and_Cyclic              = false;     % Use cyclic de-convolution to correct for delay + upsampling
 Sim_Struct.Use_Upsampling_Delay_Comp              = false;     % Upsample Ct(t) and AIF(t) to try and predict time shift in AIF
 Sim_Struct.Upsampling_resolution                  = 0.5 / 60;  % Set the upsampling target
