@@ -157,10 +157,10 @@ if (Delay_Correct)
         Conv_X_no_noise = Conv_X_shift_modified;
         
         % Deconvolution by regularization for larsson's filter
-        [~, ~, ~, Spline_est(:,i), idx_fig]...
+        [~, ~, ~, Spline_est(:,i), ~, ~, ~, idx_fig]...
             = Regularization_Methods_Simulation(Sim_Ct_larss_Regul_modified, Sim_Ct_larss_Regul_noise_modified,Conv_X_shift_modified,Conv_X_no_noise,time_vec_minutes_modified,...
             lambda_vec_larss, normalize, min_interval, B_mat_modified, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0 );
-
+                
         %% Estimate Patlak parameters for initial guess
         AIF                   = Sim_AIF_with_noise_Regul_shifted;
         Y_vec_Vb              = Sim_Ct_larss_Regul ./ AIF;                        %[mL/100g]

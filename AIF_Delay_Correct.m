@@ -23,6 +23,7 @@ additional_AIF_delay_sec        = Sim_Struct.additional_AIF_delay_sec(iter_num);
 BiExp2CTC_RMS_Ratio             = Sim_Struct.BiExp2CTC_RMS_Ratio;
 plot_flag                       = Sim_Struct.plot_flag; 
 adjusted_larsson                = Sim_Struct.Adjusted_Larsson_Model;
+Filter_Est_Chosen               = Sim_Struct.Filter_Est_Chosen;
 
 Final_Filter_Estimation_Larss   = ht_Struct.Final_Filter_Estimation_Larss;
 Sim_AIF_with_noise_Regul        = ht_Struct.Sim_AIF_with_noise_Regul;
@@ -162,11 +163,11 @@ else
             
         
             % Deconvolution by regularization for larsson's filter
-            [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
+            [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
                 = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_modified,Conv_X_shift_modified,Conv_X_no_noise,time_vec_minutes_modified,...
                 lambda_vec_larss, normalize, min_interval, B_mat_modified, B_PCA, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0 );
             
-            [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
+            [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, Sim_Struct.est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
 
             %% Estimate Patlak parameters for initial guess
             AIF                   = Sim_AIF_with_noise_Regul_shifted;

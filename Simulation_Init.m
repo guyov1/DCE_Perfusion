@@ -62,17 +62,9 @@ end
 
 % Regular B-splines
 Sim_Struct.B_mat      = Create_B_matrix(Sim_Struct.knots,Sim_Struct.time_vec_minutes,Sim_Struct.poly_deg-1);
-
 % PCA Splines
-file_to_load          = ['./Utils/Alt_Basis_' num2str(Sim_Struct.sec_interval(1)) '_sec_Total_' num2str(Sim_Struct.total_sim_time_min) '_min' '.mat'];
-if( exist(file_to_load,'file') )
-    temp                  = load(file_to_load);
-else
-    PCA_basis(Sim_Struct);
-    temp                  = load(file_to_load);
-end
-
-Basis_Mat             = temp.B_check;
+Basis_Mat             = PCA_basis(Sim_Struct, Sim_Struct.time_vec_minutes);
+% Take # of eigen-vectors similar to B-splines
 num_cols_B_mat        = size(Sim_Struct.B_mat,2);
 Sim_Struct.PCA_B_mat  = Basis_Mat(:,1:num_cols_B_mat);
 % Laguerre splines
