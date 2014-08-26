@@ -1,6 +1,8 @@
 function [] = Set_Parallel_Processing( Sim_Struct, Verbosity )
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+
+% Do not display warning regarding attaching files that were attached before 
+warning('off','parallel:lang:pool:IgnoringAlreadyAttachedFiles')
+
 tic;
 
 if ~strcmp(Verbosity,'None')
@@ -13,7 +15,7 @@ if ( ~Sim_Struct.FORCE_SERIAL || ~Sim_Struct.FORCE_MAIN_LOOP_SERIAL )
         num_processes = getenv('NUMBER_OF_PROCESSORS');
         % Maximum allowed processes are 12 in matlab 2012
         if (num_processes > 12)
-            num_processes = 12;
+            num_processes = 11;
         end
         
         myCluster = parcluster('local');
@@ -26,7 +28,8 @@ if ( ~Sim_Struct.FORCE_SERIAL || ~Sim_Struct.FORCE_MAIN_LOOP_SERIAL )
             fprintf('\n');
         end
         
-        matlabpool;
+        %matlabpool;
+        parpool;
         
         if ~strcmp(Verbosity,'None')
             fprintf('\n');
@@ -48,7 +51,7 @@ if ( ~Sim_Struct.FORCE_SERIAL || ~Sim_Struct.FORCE_MAIN_LOOP_SERIAL )
 end
 
 % Add needed functions to parallel workers
-if ( (Sim_Struct.num_iterations > 1) || ~Sim_Struct.FORCE_SERIAL || ~Sim_Struct.FORCE_MAIN_LOOP_SERIAL)
+if ( (Sim_Struct.num_iterations > 1) || ~Sim_Struct.FORCE_SERIAL || ~Sim_Struct.FORCE_MAIN_LOOP_SERIAL || Sim_Struct.RealData_Flag )
     
     if strcmp(Verbosity,'Full')
         display('-I- Starting Parallel Processing Setting...');
@@ -58,7 +61,9 @@ if ( (Sim_Struct.num_iterations > 1) || ~Sim_Struct.FORCE_SERIAL || ~Sim_Struct.
     myFiles = {'Summarize_Iteration.m', 'Estimate_ht_Wiener.m', 'Simulation.m', ...
                'Print2Pdf.m', 'gprint.m', 'AddToLog.m', 'Regularized_Sol.m', ...
                'AIF_Parker.m', 'ReScale_AIF.m', 'Choose_Needed_Ht.m', ...
-               'Create_B_matrix.m', 'Basis_spline_function.m', 'PCA_basis.m'};
+               'Create_B_matrix.m', 'Basis_spline_function.m', 'PCA_basis.m', ...
+               'Patlak_Estimation.m', 'AIF_Delay_Correct.m', 'Gaussian.m', 'DoubleGaussian.m'};
+    
     addAttachedFiles(myPool, myFiles);
     
     if strcmp(Verbosity,'Full')

@@ -59,15 +59,15 @@ if (plot_error_results_flag)
     error_percent_t_d_Larss     = results(21,:);
     std_t_d_Larss_sec           = results(22,:);
     
-    % Ki
-    real_larsson_Ki_Patlak_vec  = results(23,:);
-    est_larsson_Ki_Patlak_vec   = results(24,:);
-    error_percent_Ki_Patlak     = results(25,:);
-    std_Ki_Patlak               = results(26,:);
-    real_larsson_Ki_2CXM_vec    = results(27,:);
-    est_larsson_Ki_2CXM_vec     = results(28,:);
-    error_percent_Ki_2CXM       = results(29,:);
-    std_Ki_2CXM                 = results(30,:);
+    % Ktrans
+    real_larsson_Ktrans_Patlak_vec  = results(23,:);
+    est_larsson_Ktrans_Patlak_vec   = results(24,:);
+    error_percent_Ktrans_Patlak     = results(25,:);
+    std_Ktrans_Patlak               = results(26,:);
+    real_larsson_Ktrans_2CXM_vec    = results(27,:);
+    est_larsson_Ktrans_2CXM_vec     = results(28,:);
+    error_percent_Ktrans_2CXM       = results(29,:);
+    std_Ktrans_2CXM                 = results(30,:);
     
     % PS
     real_larsson_PS_vec         = results(31,:);
@@ -123,11 +123,11 @@ if (plot_error_results_flag)
     error_percent_Sourbron_F            = results(69,:);
     std_Sourbron_F                      = results(70,:);
     
-    % Sourbron - Ki
-    real_larsson_Ki_Sourbron_2CXM_vec    = results(71,:);
-    est_larsson_Ki_Sourbron_2CXM_vec     = results(72,:);
-    error_percent_Ki_Sourbron_2CXM       = results(73,:);
-    std_Ki_Sourbron_2CXM                 = results(74,:);
+    % Sourbron - Ktrans
+    real_larsson_Ktrans_Sourbron_2CXM_vec    = results(71,:);
+    est_larsson_Ktrans_Sourbron_2CXM_vec     = results(72,:);
+    error_percent_Ktrans_Sourbron_2CXM       = results(73,:);
+    std_Ktrans_Sourbron_2CXM                 = results(74,:);
     
     % Sourbron - Vb
     real_larsson_Vb_Sourbron_2CXM_vec    = results(75,:);
@@ -150,8 +150,8 @@ if (plot_error_results_flag)
     % Larsson - absolute error vectors
     abs_larss_error_F               = results(87,:);
     abs_larss_error_AIF_delay       = results(88,:);
-    abs_larss_error_Ki_Patlak       = results(89,:);
-    abs_larss_error_Ki_2CXM         = results(90,:);
+    abs_larss_error_Ktrans_Patlak   = results(89,:);
+    abs_larss_error_Ktrans_2CXM     = results(90,:);
     abs_larss_error_PS              = results(91,:);
     abs_larss_error_Vb_Patlak       = results(92,:);
     abs_larss_error_Vb_2CXM         = results(93,:);
@@ -306,7 +306,7 @@ if (plot_error_results_flag)
         
         subplot(2,1,1);
         %plot(real_sigma_vec,error_percent_sigma);
-        errorbar(time_interval_vec,error_percent_Ki_2CXM,std_Ki_2CXM);
+        errorbar(time_interval_vec,error_percent_Ktrans_2CXM,std_Ktrans_2CXM);
         title_string = 'est. error vs. time interval';
         title(title_string,'FontSize',font_size,'FontWeight','bold');
         xlabel('Time Interval [sec]');
@@ -314,16 +314,16 @@ if (plot_error_results_flag)
         set(gca,'fontsize',font_size_axis,'FontWeight','bold');
         
         subplot(2,1,2);
-        errorbar(time_interval_vec,est_larsson_Ki_2CXM_vec,std_Ki_2CXM);
-        title_string = 'est. Ki 2CXM vs. time interval';
+        errorbar(time_interval_vec,est_larsson_Ktrans_2CXM_vec,std_Ktrans_2CXM);
+        title_string = 'est. Ktrans 2CXM vs. time interval';
         title(title_string,'FontSize',font_size,'FontWeight','bold');
         xlabel('Time Interval [sec]');
-        ylabel('est. Ki 2CXM');
+        ylabel('est. Ktrans 2CXM');
         set(gca,'fontsize',font_size_axis,'FontWeight','bold');
         
         % Print result to PDF
-        [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Est_Error_Analysis_Larsson_Ki_2CXM_vs_Time_Interval.png', './Run_Output/',...
-            'est. Ki 2XCM Error Analysis vs. Time Interval', 'EstErrorAnalysis');
+        [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Est_Error_Analysis_Larsson_Ktrans_2CXM_vs_Time_Interval.png', './Run_Output/',...
+            'est. Ktrans 2XCM Error Analysis vs. Time Interval', 'EstErrorAnalysis');
         
         
         fig_num = figure;
@@ -435,7 +435,7 @@ if (plot_error_results_flag)
         
         %set(h_legend,'FontSize',font_size);
         
-        title_string = sprintf('est. error vs. original Flow. Vb=%d, E=%.2f',Vb_single,E_single,'FontSize',font_size,'FontWeight','bold');
+        title_string = sprintf('est. error vs. original Flow. Vb=%d, E=%.2f',Vb_single,E_single);
         title(title_string,'FontSize',font_size,'FontWeight','bold');
         xlabel('Original Flow','FontSize',font_size,'FontWeight','bold');
         ylabel('Error percent','FontSize',font_size,'FontWeight','bold');
@@ -456,7 +456,7 @@ if (plot_error_results_flag)
         ylim([0 150]);   %Sets y axis limits
         
 
-        title_string = sprintf('est. Flow vs. original Flow. Vb=%d, E=%.2f',Vb_single,E_single,'FontSize',font_size,'FontWeight','bold');
+        title_string = sprintf('est. Flow vs. original Flow. Vb=%d, E=%.2f',Vb_single,E_single);
         title(title_string,'FontSize',font_size,'FontWeight','bold');
         xlabel('Original Flow','FontSize',font_size,'FontWeight','bold');
         ylabel('est. Flow','FontSize',font_size,'FontWeight','bold');
@@ -475,7 +475,7 @@ if (plot_error_results_flag)
         subplot(2,1,1);
         %plot(real_sigma_vec,error_percent_sigma);
         errorbar(real_larsson_Vb_Patlak_vec,error_percent_Vb_Patlak,std_Vb_Patlak);
-        title_string = sprintf('est. error vs. original Vb. F=%d, E=%.2f',F_single,E_single,'FontSize',font_size,'FontWeight','bold');
+        title_string = sprintf('est. error vs. original Vb. F=%d, E=%.2f',F_single,E_single);
         title(title_string,'FontSize',font_size,'FontWeight','bold');
         xlabel('Original Vb');
         ylabel('Error percent');
@@ -633,9 +633,9 @@ if (plot_error_results_flag)
             ['Estimation Error Using ' Filter_Est_Chosen ' :'],...
             '',...
             ['F                   - Err. %         = ' num2str(mean(error_percent_F               ),'%5.2f') ' +- ' num2str(std(error_percent_F                ),'%5.2f') '        [mL/100g/min]'],...    
-            ['E                   - Abs Err.       = ' num2str(mean(abs_larss_error_E               ),'%5.2f') ' +- ' num2str(std(abs_larss_error_E                )) '        []'],...
-            ['Vp                 - Err. %         = ' num2str(mean(error_percent_Vb_2CXM         ),'%5.2f') ' +- ' num2str(std(error_percent_Vb_2CXM          ),'%5.2f') '        [mL/100g]'],...
-            ['Ve                 - Err. %         = ' num2str(mean(error_percent_Ve_2CXM         ),'%5.2f') ' +- ' num2str(std(error_percent_Ve_2CXM          ),'%5.2f') '        [mL/100g]'],...
+            ['Ktrans           - Err. %         = ' num2str(mean(error_percent_Ktrans_2CXM     ),'%5.2f') ' +- ' num2str(std(error_percent_Ktrans_2CXM                ),'%5.2f') '        [mL/100g/min]'],...        
+            ['Vp                 - Err. %         = ' num2str(mean(error_percent_Vb_2CXM          ),'%5.2f') ' +- ' num2str(std(error_percent_Vb_2CXM          ),'%5.2f') '        [mL/100g]'],...
+            ['Ve                 - Err. %         = ' num2str(mean(error_percent_Ve_2CXM          ),'%5.2f') ' +- ' num2str(std(error_percent_Ve_2CXM          ),'%5.2f') '        [mL/100g]'],...
             ['F Sourbron   - Err. %         = ' num2str(mean(error_percent_Sourbron_F      ),'%5.2f') ' +- ' num2str(std(error_percent_Sourbron_F       ),'%5.2f') '        [mL/100g/min]'],...
             ['Vp Sourbron - Err. %         = ' num2str(mean(error_percent_Vb_Sourbron_2CXM),'%5.2f') ' +- ' num2str(std(error_percent_Vb_Sourbron_2CXM ),'%5.2f') '        [mL/100g]'],...
             ['Ve Sourbron - Err. %         = ' num2str(mean(error_percent_Ve_Sourbron_2CXM),'%5.2f') ' +- ' num2str(std(error_percent_Ve_Sourbron_2CXM ),'%5.2f') '        [mL/100g]']},...
@@ -647,7 +647,7 @@ if (plot_error_results_flag)
             'BackgroundColor',[1 1 1],...
             'Color',[0.0 0.0 0]);
         
-        %['E                   - Err. %         = ' num2str(mean(error_percent_E               ),'%5.2f') ' +- ' num2str(std(error_percent_E                )) '        []'],...
+        %['E                   - Abs Err.       = ' num2str(mean(abs_larss_error_E             ),'%5.2f') ' +- ' num2str(std(abs_larss_error_E                )) '        []'],...
         
         % Print result to PDF
         [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Estimation_Error_Summary.png', './Run_Output/',...

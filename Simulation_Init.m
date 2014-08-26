@@ -95,8 +95,8 @@ Sim_Struct.est_F_noise_vec                        = zeros(1,num_averages);
 Sim_Struct.est_Delay_sec_noise_vec                = zeros(1,num_averages);
 Sim_Struct.est_Delay_sec_using_Gaussian_noise_vec = zeros(1,num_averages);
 
-Sim_Struct.est_Ki_Patlak_noise_vec                = zeros(1,num_averages);
-Sim_Struct.est_Ki_Two_Comp_noise_vec              = zeros(1,num_averages);
+Sim_Struct.est_Ktrans_Patlak_noise_vec                = zeros(1,num_averages);
+Sim_Struct.est_Ktrans_Two_Comp_noise_vec              = zeros(1,num_averages);
 Sim_Struct.est_E_noise_vec                        = zeros(1,num_averages);
 Sim_Struct.est_PS_noise_vec                       = zeros(1,num_averages);
 Sim_Struct.est_Vb_Patlak_noise_vec                = zeros(1,num_averages);
@@ -109,7 +109,7 @@ Sim_Struct.est_MTT_normal_tis_noise_vec           = zeros(1,num_averages);
 
 % Sourbron's parameters
 Sim_Struct.est_F_Sourbron_noise_vec               = zeros(1,num_averages);
-Sim_Struct.est_Ki_Sourbron_Two_Comp_noise_vec     = zeros(1,num_averages);
+Sim_Struct.est_Ktrans_Sourbron_Two_Comp_noise_vec     = zeros(1,num_averages);
 Sim_Struct.est_Vb_Sourbron_Two_Comp_noise_vec     = zeros(1,num_averages);
 Sim_Struct.est_Ve_Sourbron_Two_Comp_noise_vec     = zeros(1,num_averages);
 

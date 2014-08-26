@@ -1,8 +1,8 @@
-function [ Flow_vec, Delay_sec_vec, Delay_BiExp_Fit, t_delay_seconds_vec, sigma_seconds_vec, Amp_vec, Est_ht, ...
-    calculated_gaussian, conv_result_ht, conv_result_gaussian, RMS_ht, RMS_gauss, RMS_params,...
-    calculated_double_gaussian, conv_result_double_gaussian, double_gaussian_param_vec, ...
-    RMS_double_gauss, RMS_params_double_gauss, Ki_vec, Vb_vec, Ve_vec, MTT_vec, Ki_Patlak_vec, Vb_Patlak_vec, MTT_Patlak_vec ] ...
-    = Get_Ht_Deconvolving(Sim_Struct, AIF, Ct , sec_interval, Output_directory, Subject_name, FORCE)
+function [ Flow_vec, Delay_sec_by_Max_Val, est_delay_by_AIF_correct, t_delay_single_gauss_sec_vec, sigma_seconds_single_gauss_vec, Amp_single_gauss_vec, Est_ht, ...
+    fitted_gaussian, conv_result_ht, conv_result_gaussian, RMS_ht, RMS_gauss, RMS_params,...
+    fitted_double_gaussian, conv_result_double_gaussian, double_gaussian_param_vec, ...
+    RMS_double_gauss, RMS_params_double_gauss, Ktrans_vec, Vb_vec, Ve_vec, MTT_vec, Ktrans_Patlak_vec, Vb_Patlak_vec, MTT_Patlak_vec ] ...
+    = Get_Ht_Deconvolving(Sim_Struct, AIF, Ct , Output_directory, Subject_name, Force_RealData_Calc, Verbosity)
 
 %Get_Ht_Deconvolving Extracting possible h_t filter
 %   The function gets AIF(nT), Ct(num_voxels,nT) - the arterial input function and the
@@ -28,118 +28,166 @@ function [ Flow_vec, Delay_sec_vec, Delay_BiExp_Fit, t_delay_seconds_vec, sigma_
 %   - RMS_double_gauss, the root mean square error of conv_result with estimated double gaussian and Ct.
 %   - RMS_params_2, the root mean square error of the double gaussian using the parameters
 %                   and h(t)  (if too big, h(t) is not really double gaussian)
-%   - Ki   - estimation for permeability according to Larsson
+%   - Ktrans   - estimation for permeability according to Larsson
 %   - Vb   - estimation for blood volume according to Larsson
 %   - Ve   - estimation for EES volume according to Larsson
 %   - MTT  - estimation for Mean Transient Time according to Larsson
-%   - Ki_Patlak_vec  - estimation for permeability according to Patlak
+%   - Ktrans_Patlak_vec  - estimation for permeability according to Patlak
 %   - Vb_Patlak_vec  - estimation for blood volume according to Patlak
 %   - MTT_Patlak_vec - estimation for Mean Transient Time according to Patlak
 
 
 %% Initiate parameters
 
-adjusted_larsson         = Sim_Struct.Adjusted_Larsson_Model;
-
-% Choose what to use/not use
-USE_ONE_GAUSSIAN    = false;
-USE_DOUBLE_GAUSSIAN = false;
-USE_WIENER          = false;
-USE_TICHONOV        = true;
-% Try to correct for possible AIF delay
-Delay_Correct       = false;
-
-% Time interval between samples
-Fs             = 1 / sec_interval; %[Hz] - Sampling rate
-min_interval   = sec_interval/60;  %[min]
-
-% Get number of time stamps (vector length)
-num_time_stamps    = size(Ct,2);
-num_voxels         = size(Ct,1);
-
-% Time vector for AIF and Ct(t)
-time_vec_minutes   = double((1:num_time_stamps).* min_interval);
-time_vec_minutes_T = transpose(time_vec_minutes);
-
-% Non-linear square fitting parameters
-FMS_TolFun        = 1e-11;
-FMS_MaxFunEvals   = 10000;
-FMS_MaxIter       = 10000;
-algorithm_options = optimset('TolFun',FMS_TolFun,'MaxFunEvals',FMS_MaxFunEvals,'MaxIter',FMS_MaxIter,'Display','off');
-
-% Initial Guess (td=1sec, var=1, amp=0)
-init_guess   = [1/60 1/60 0];
-init_guess_2 = [1/60 1/60 0 3/60 1/60 0];
-
-% Set lower and upper bounds for parameters
-% Time delay -> 0 to 3 seconds
-% Sigma      -> 0 to 1 seconds
-% Amplitude  -> 0 to 1
-LowerBound  = [0     0    0];
-UpperBound  = [30/60 1/60 1];
-
-% For double gaussian
-LowerBound_2  = [0     0    0  0    0     0];
-UpperBound_2  = [30/60 1/60 1 4*60/60 60/60 1];
-
-
-% Larsson parameters boundaries for non-linear curve fitting
-% Vb -> 0 to 100 [ml/100g]
-% E  -> 0 to 1
-% Ve -> 0 to 100 [ml/100g]
-LowerBound_Larsson  = [0   0     0];
-UpperBound_Larsson  = [100 1     100];
+Adjusted_Larsson_Model          = Sim_Struct.Adjusted_Larsson_Model;
+Patlak_Est_Type                 = Sim_Struct.Patlak_Est_Type;
+Parallel_Real_Data_Est          = Sim_Struct.Parallel_Real_Data_Est;
+time_vec_minutes                = Sim_Struct.time_vec_minutes;
+min_interval                    = Sim_Struct.min_interval;
+num_time_stamps                 = Sim_Struct.num_time_stamps;
+num_voxels                      = Sim_Struct.num_voxels;
+lambda_vec_larss                = Sim_Struct.lambda_vec_larss;
+normalize                       = Sim_Struct.normalize;  % Normalize flag for ridge() function
+plot_L_Curve                    = Sim_Struct.plot_L_Curve;
+Derivative_Time_Devision        = Sim_Struct.Derivative_Time_Devision;
+Upsampling_resolution           = Sim_Struct.Upsampling_resolution;
+Max_Time_Delay                  = Sim_Struct.Max_Time_Delay;
+Min_Time_Delay                  = Sim_Struct.Min_Time_Delay;
+RMS_Smooth_Around_Bolus         = Sim_Struct.RMS_Smooth_Around_Bolus;
+RMS_Smooth                      = Sim_Struct.RMS_Smooth;
+Correct_estimation_due_to_delay = Sim_Struct.Correct_estimation_due_to_delay;
+Simple_AIF_Delay_Correct        = Sim_Struct.Simple_AIF_Delay_Correct;
+LowerBound_Larsson              = Sim_Struct.LowerBound_Larsson;
+UpperBound_Larsson              = Sim_Struct.UpperBound_Larsson;
+Hct                             = Sim_Struct.Hct_single;
+Diff_From_Bolus                 = Sim_Struct.Diff_From_Bolus;        % The difference in seconds from the bolus to look on
+Vb_low                          = Sim_Struct.Vb_low;
+algorithm_options               = Sim_Struct.algorithm_options;
+Use_Upsampling_Delay_Comp       = Sim_Struct.Use_Upsampling_Delay_Comp;
+BiExp2CTC_RMS_Ratio             = Sim_Struct.BiExp2CTC_RMS_Ratio;
+Filter_Est_Chosen               = Sim_Struct.Filter_Est_Chosen;
+USE_WIENER                      = Sim_Struct.USE_WIENER;
+USE_TICHONOV                    = Sim_Struct.USE_TICHONOV;
 
 %% Estimating h(t) by Wiener filter / Tikhonov Regularization
-Est_ht          = zeros(num_voxels,num_time_stamps);
-Delay_BiExp_Fit = zeros(1,num_voxels);
+Est_ht                   = zeros(num_voxels,num_time_stamps);
+est_delay_by_AIF_correct = zeros(1,num_voxels);
 
-% -------------- Wiener ---------------------------
 
-if (USE_WIENER)
+if USE_WIENER
     [Est_ht] = Wiener_Filter( min_interval*AIF, Ct, Fs);
-end
-
-% -------------- Tikhonov ---------------------------
-
-if (USE_TICHONOV)
+elseif USE_TICHONOV   
     
-    % Parameters
-    %lambda_vec              = [9 132 0.0391 0.0141];
-    lambda_vec              = [4.7 0.9 0.1 0.2];
-    normalize               = 1;  % Normalize flag for ridge() function
     % Choose knots for splines (currently takes every 1 out of 2 points)
-    knot_interval           = 2;
+    knot_interval           = Sim_Struct.knot_interval;
     knots                   = time_vec_minutes(1:knot_interval:end);
     % Create the the spline basis matrix
-    poly_deg                = 4;
-    display('-I- Create B-splines matrix...');
+    poly_deg                = Sim_Struct.poly_deg;
     B_mat                   = Create_B_matrix(knots,time_vec_minutes,poly_deg-1);
-    
     % Create convolution indices
-    [ Conv_X ] = Convolution_Matrix( min_interval, AIF );
+    [ Conv_Matrix ] = Convolution_Matrix( min_interval, AIF );
     
     % Check if already calculated Ht
     Mat_File_Ht = [Output_directory 'Estimated_Tichonov_Ht_' Subject_name '.mat'];
     
-    if(exist(Mat_File_Ht,'file') && ~FORCE)
+    Sim_Ct_T                 = NaN;
+    %Conv_Matrix              = ; % Already Assigned
+    Conv_Matrix_no_noise     = NaN;
+    %time_vec_minutes         = ; % Already Assigned
+    %lambda_vec               = ; % Already Assigned
+    %normalize                = ; % Already Assigned
+    %min_interval             = ; % Already Assigned
+    %B_mat                    = ; % Already Assigned
+    B_PCA                    = NaN;
+    %plot_L_Curve             = ; % Already Assigned
+    idx_fig                  = 1;
+    filter_type              = 'Larss';
+    %Derivative_Time_Devision = ; % Already Assigned
+    plot_flag                = false;
+    RealData_Flag            = Sim_Struct.RealData_Flag;
+    
+    % --------------- AIF delay correction parameters ------------------
+    In_Struct1                                    = struct;
+    In_Struct1.normalize                          = normalize;
+    In_Struct1.B_mat                              = B_mat;
+    In_Struct1.PCA_B_mat                          = NaN;
+    In_Struct1.plot_L_Curve                       = plot_L_Curve;
+    In_Struct1.Derivative_Time_Devision           = Derivative_Time_Devision;
+    In_Struct1.lambda_vec_larss                   = lambda_vec_larss;
+    In_Struct1.min_interval                       = min_interval;
+    In_Struct1.time_vec_minutes                   = time_vec_minutes;
+    In_Struct1.Upsampling_resolution              = Upsampling_resolution;
+    In_Struct1.Max_Time_Delay                     = Max_Time_Delay;
+    In_Struct1.Min_Time_Delay                     = Min_Time_Delay;
+    In_Struct1.Use_Upsampling_Delay_Comp          = Use_Upsampling_Delay_Comp;
+    In_Struct1.LowerBound_Larsson                 = LowerBound_Larsson;
+    In_Struct1.UpperBound_Larsson                 = UpperBound_Larsson;
+    In_Struct1.algorithm_options                  = algorithm_options;
+    In_Struct1.Hct                                = Hct; % Try to read it from patient
+    In_Struct1.RMS_Smooth_Around_Bolus            = RMS_Smooth_Around_Bolus;
+    In_Struct1.RMS_Smooth                         = RMS_Smooth;
+    In_Struct1.Diff_From_Bolus                    = Diff_From_Bolus;
+    In_Struct1.additional_AIF_delay_sec           = 0;
+    In_Struct1.BiExp2CTC_RMS_Ratio                = BiExp2CTC_RMS_Ratio;
+    In_Struct1.plot_flag                          = false;
+    In_Struct1.Adjusted_Larsson_Model             = Adjusted_Larsson_Model;
+    In_Struct1.Filter_Est_Chosen                  = Filter_Est_Chosen;
+    In_Struct1.Vb_low                             = Vb_low;
+    In_Struct1.RealData_Flag                      = RealData_Flag;
+    In_Struct1.Simple_AIF_Delay_Correct           = Simple_AIF_Delay_Correct;
+    In_Struct1.Patlak_Est_Type                    = Patlak_Est_Type;
+    In_Struct1.Ktrans                             = NaN;       % Simulation ground truth values
+    In_Struct1.Vb_larss                           = NaN; % Simulation ground truth values
+    In_Struct1.init_Ve_guess                      = Sim_Struct.init_Ve_guess;
+    In_Struct1.FMS_Algorithm                      = Sim_Struct.FMS_Algorithm;
+    
+    In_Struct2                                    = struct;
+    In_Struct2.Sim_AIF_with_noise_Regul           = AIF;
+    In_Struct2.Sim_Ct_larss_Regul                 = NaN;
+    In_Struct2.Conv_X_no_noise                    = NaN;
+    iter_num                                      = 1;
+    avg_num                                       = 1;
+    % ------------------------------------------------------------
+    
+    if(exist(Mat_File_Ht,'file') && ~Force_RealData_Calc)
         load(Mat_File_Ht);
+        display('--------------------------------------------------------');
+        display('-I- Starting h(t) estimation using regularization...');
+        display('--------------------------------------------------------');
     else
+        
         
         display('--------------------------------------------------------');
         display('-I- Starting h(t) estimation using regularization...');
         display('--------------------------------------------------------');
         
+        AIF_delay_corrected = zeros(size(Ct));
+        
         %for j=1:num_voxels
         parfor j=1:num_voxels
+            tic;
             
-            % Deconvolution by regularization for larsson's filter
-            [Est_ht(j,:), Delay_BiExp_Fit(j)] = Regularization_Methods(Sim_Struct, Ct(j,:)', AIF', Conv_X, time_vec_minutes, lambda_vec, normalize, min_interval, B_mat, Delay_Correct );
+            [ ~, ~, ~, b_spline_result_2nd_deriv, ~, ~, ~, ~ ] =  ...
+                Regularization_Methods_Simulation( Sim_Ct_T, Ct(j,:)', Conv_Matrix, Conv_Matrix_no_noise, time_vec_minutes, lambda_vec_larss, normalize, min_interval, B_mat, B_PCA, plot_L_Curve, idx_fig, filter_type, Derivative_Time_Devision, plot_flag, RealData_Flag );
+            
+            Est_ht(j,:) = b_spline_result_2nd_deriv;
+            
+            % Estimate delay
+            % Correct h(t) estimation if it seems we have delay in AIF
+            if Correct_estimation_due_to_delay
+                [est_delay_by_AIF_correct(j), AIF_delay_corrected(j ,:), Est_ht(j,:), ~] = ...
+                    AIF_Delay_Correct(In_Struct1, In_Struct2, Est_ht(j,:), Ct(j,:)', Verbosity, iter_num, avg_num, idx_fig);
+            else
+                AIF_delay_corrected(j ,:) = AIF;
+            end
+            
+            % if Use_Cyclic_Conv_4_ht_est
+            % Cyclic_Deconvolve( Sim_Struct, Verbosity, iter_num, avg_num, idx_fig )
             
             % Report after each 1000 voxels
             if ( mod(j,1000) == 0 )
                 
-                display(sprintf('Finished Regularization_Methods for %d voxels...',j));
+                display(sprintf('Finished Regularization_Methods_Simulation for 1000 voxels in %d minutes...', toc/60));
                 
                 remaining_voxels = num_voxels - j;
                 
@@ -148,262 +196,43 @@ if (USE_TICHONOV)
             end
             
         end
-        save(Mat_File_Ht,'Est_ht');
+        save(Mat_File_Ht, 'Est_ht', 'est_delay_by_AIF_correct', 'AIF_delay_corrected');
         
     end
     
 end
 
-% Create the transpose for specific functions
-Est_ht_T = transpose(Est_ht);
-
-% The analytic funcational of a gaussian function (x(3) is the amplitude)
-Gaussian_function        = @(x,t) Gaussian      ( t,x(1),x(2),x(3)                );
-Double_Gaussian_function = @(x,t) DoubleGaussian( t,x(1),x(2),x(3),x(4),x(5),x(6) );
-% Hematocrit according to Larsson's article
-Hct                      = 0.38;
-
-% Gaussian parameters
-t_delay_in_min_vec            = zeros(1,num_voxels);
-t_delay_seconds_vec           = zeros(1,num_voxels);
-est_var_vec                   = zeros(1,num_voxels);
-sigma_in_min_vec              = zeros(1,num_voxels);
-sigma_seconds_vec             = zeros(1,num_voxels);
-Amp_vec                       = zeros(1,num_voxels);
-double_gaussian_param_vec     = zeros(6,num_voxels);
-calculated_gaussian           = zeros(num_voxels,num_time_stamps);
-calculated_double_gaussian    = zeros(num_voxels,num_time_stamps);
-
-% Larsson parameters
-Flow_vec                      = zeros(1,num_voxels);
-Delay_sec_vec                 = zeros(1,num_voxels);
-Ki_vec                        = zeros(1,num_voxels);
-Vb_vec                        = zeros(1,num_voxels);
-Ve_vec                        = zeros(1,num_voxels);
-MTT_vec                       = zeros(1,num_voxels);
-Ki_Patlak_vec                 = zeros(1,num_voxels);
-Vb_Patlak_vec                 = zeros(1,num_voxels);
-MTT_Patlak_vec                = zeros(1,num_voxels);
-
-
 %% Estimate parameters for all voxels by curve fitting
 
-% start_time = now;
-% tic;
-% sub_iter_num = 0;
-% duration_of_100_average = 0;
-
-% Define par struct for performance analysis
-%par_iter = Par(num_voxels);
 
 % Check if already estimated parameters for all voxels
 Mat_File_Perfusion_Parameters = [Output_directory 'Estimated_Perfusion_Parameters_' Subject_name '.mat'];
 
-if(exist(Mat_File_Perfusion_Parameters,'file') && ~FORCE)
+if(exist(Mat_File_Perfusion_Parameters,'file') && ~Force_RealData_Calc)
     load(Mat_File_Perfusion_Parameters);
 else
     
-    display('--------------------------------------------------------');
-    display('-I- Starting non linear parameters estimation...');
-    display('--------------------------------------------------------');
-    
-    % Add needed functions to parallel workers
-    myPool = gcp;
-    myFiles = {'Gaussian.m', 'DoubleGaussian.m'};
-    addAttachedFiles(myPool, myFiles);
-    
-    parfor j=1:num_voxels
-    %for j=1:num_voxels
+    if Parallel_Real_Data_Est
+        [ Flow_vec, Delay_sec_by_Max_Val, t_delay_single_gauss_sec_vec, sigma_seconds_single_gauss_vec, ...
+          Amp_single_gauss_vec, fitted_gaussian, fitted_double_gaussian, double_gaussian_param_vec, Ktrans_vec, Vb_vec, ...
+          Ve_vec, MTT_vec, Ktrans_Patlak_vec, Vb_Patlak_vec, MTT_Patlak_vec ] = Parallel_Params_Est_Real_Data(Sim_Struct, Est_ht, Ct, AIF_delay_corrected, idx_fig );
+    else
         
-        %         display(sprintf('-I- Voxel number: %d',j));
-        %         if (j==48)
-        %             a = 1;
-        %         end
-        
-        
-        % Start timing Calculation
-        %Par.tic;
-        
-
-        
-        % lsqcurvefit parameters are:
-        % analytic function, initial parameters, time vector, data points ,lower
-        % and upper bounds and algorithm options
-        
-        if (USE_ONE_GAUSSIAN)
-            [est_params,residue_norm,residual,exitflag,algo_info] = ...
-                lsqcurvefit(Gaussian_function,init_guess,time_vec_minutes_T,Est_ht_T(:,j),LowerBound,UpperBound,algorithm_options);
-        end
-        
-        
-        if (USE_DOUBLE_GAUSSIAN)
-            [est_params_2,residue_norm_2,residual_2,exitflag_2,algo_info_2] = ...
-                lsqcurvefit(Double_Gaussian_function,init_guess_2,time_vec_minutes_T,Est_ht_T(:,j),LowerBound_2,UpperBound_2,algorithm_options);
-        end
-        
-        est_params                    = zeros(1,3);
-        est_params_2                  = zeros(1,6);
-        
-        % Put parameters in wanted variables
-        t_delay_in_min_vec(j)  = est_params(1);
-        t_delay_seconds_vec(j) = 60 * t_delay_in_min_vec(j); % Convert delay time to seconds
-        est_var_vec(j)         = est_params(2);
-        sigma_in_min_vec(j)    = sqrt(est_var_vec(j));
-        sigma_seconds_vec(j)   = 60 * sigma_in_min_vec(j); % Convert sigma to seconds
-        Amp_vec(j)             = est_params(3);
-        
-        % Larsson parameters
-        Flow_vec(j)      = max(Est_ht_T(:,j));
-        
-        %% ----------------------- PATLAK --------------------------------------
-        
-        %Use patlak to get initial parameters estimation
-        
-        
-        % Ignore points where Ca(t) is very small (because then the result is unstable)
-        Y_vec_Vb         = Ct(j,:) ./ AIF;                        %[mL/100g]
-        X_vec            = cumtrapz(time_vec_minutes,AIF) ./ AIF; %[min]
-        [val, bolus_idx] = max(diff(AIF));
-        base_value       = mean(AIF(1:bolus_idx-1));
-        mult_val_Thresh  = 3;
-        Threshold        = mult_val_Thresh*base_value;
-        stable_idx       = find(AIF > Threshold);
-        
-        % Take the stable points out of the vector
-        X_vec            = X_vec(stable_idx);
-        Y_vec_Vb         = Y_vec_Vb(stable_idx);
-        
-        % Remove Zeros/NaNs/Infs caused because of division by 0
-        nan_indices           = find(isnan(Y_vec_Vb));
-        inf_indices           = find(~isfinite(Y_vec_Vb));
-        Y_vec_Vb(nan_indices) = [];
-        Y_vec_Vb(inf_indices) = [];
-        X_vec(nan_indices)    = [];
-        X_vec(inf_indices)    = [];
-        
-        % Fine straight line coefficent
-        [linear_params]       = polyfit(X_vec,Y_vec_Vb,1);
-        
-        est_Ki_Patlak_noise   = linear_params(1); %a in ax+b
-        est_Vb_Patlak_noise   = linear_params(2); %b in ax+b
-        
-        % Handle zero value
-        if ( Flow_vec(j) > 0 )
-            E_Patlak_est          = est_Ki_Patlak_noise / Flow_vec(j); % E = Ki / F
-            est_MTT_Patlak        = est_Vb_Patlak_noise / Flow_vec(j);
-        else
-            est_Vb_Patlak_noise   = 0;
-            E_Patlak_est          = 0;
-            est_MTT_Patlak        = 0;
-        end
-        
-        
-        %% ----------------------- PATLAK END --------------------------------------
-        
-        % Initial Guess for non-linear curve fitting for Larsson (Vb, E, Ve)
-        Init_Guess_Larsson = double( [est_Vb_Patlak_noise E_Patlak_est 10] );
-        
-        est_F = double(Flow_vec(j));
-        % The analytic funcational of a Larsson function
-        if (adjusted_larsson)
-            Larsson_function         = @(x,t) Adjusted_Larsson_Filter( t, est_F, x(1), x(2), x(3));
-        else
-            Larsson_function         = @(x,t) Larsson_Filter( t, est_F, x(1), x(2), x(3), Hct);
-        end
-        
-        % Calculate parameters only in case F is not 0 (or else there is a
-        % problem)
-        
-        if (est_F~=0)
-            [est_params_Larsson_noise,residue_norm_Larsson_noise,residual_Larsson_noise,exitflag_Larsson_noise,algo_info_Larsson_noise] = ...
-                lsqcurvefit(Larsson_function,Init_Guess_Larsson,time_vec_minutes_T,Est_ht_T(:,j)/Flow_vec(j),...
-                LowerBound_Larsson,UpperBound_Larsson,algorithm_options);
-            
-            % Assigning two compartment parameters estimation
-            Ki_vec(j)         = est_params_Larsson_noise(2)* Flow_vec(j);
-            Vb_vec(j)         = est_params_Larsson_noise(1);
-            Ve_vec(j)         = est_params_Larsson_noise(3);
-            % Estimate MTT
-            est_IRF           = Est_ht_T(:,j) / Flow_vec(j);
-            est_MTT_noise     = cumtrapz(time_vec_minutes,est_IRF);
-            MTT_vec(j)        = est_MTT_noise(end);
-            
-            % Assigning Patlak parameters estimation
-            Ki_Patlak_vec(j)  = est_Ki_Patlak_noise;
-            Vb_Patlak_vec(j)  = est_Vb_Patlak_noise;
-            MTT_Patlak_vec(j) = est_MTT_Patlak;
-            
-            % Delay of the AIF will be calculated according to the place of the maximum value of F*IRF
-            max_index        = find( Est_ht_T(:,j) == Flow_vec(j) );
-            % Translate to minutes
-            Delay_sec_vec(j) =  (max_index - 1) * min_interval * 60;
-            
-            % Convert sigma to variance and minutes to seconds
-            delay_1_seconds = est_params_2(1) * 60;
-            sigma_1_seconds = sqrt(est_params_2(2)) * 60;
-            amp_1           = est_params_2(3);
-            delay_2_seconds = est_params_2(4) * 60;
-            sigma_2_seconds = sqrt(est_params_2(5)) * 60;
-            amp_2           =  est_params_2(6);
-            
-            double_gaussian_param_vec(:,j) = [delay_1_seconds sigma_1_seconds amp_1 delay_2_seconds sigma_2_seconds amp_2];
-            
-            
-            % Calculate gaussian out of parameters
-            calculated_gaussian(j,:)        = Gaussian(time_vec_minutes, t_delay_in_min_vec(j), sigma_in_min_vec(j)^2, Amp_vec(j));
-            
-            % Calculate double gaussian out of parameters
-            calculated_double_gaussian(j,:) = DoubleGaussian(time_vec_minutes, est_params_2(1), est_params_2(2), est_params_2(3) ...
-                ,  est_params_2(4), est_params_2(5), est_params_2(6));
-            
-        end
-        
-        % Report after each 100 voxels
-        if ( mod(j,100) == 0 )
-            
-            %         duration_of_100 = toc;
-            %         tic;
-            %
-            display(sprintf('Finished lsqcurvefit for %d voxels...',j));
-            %
-            %         disp(['Calculating 100 iterations took: ' num2str(duration_of_100) ' seconds.']);
-            %
-            remaining_voxels = num_voxels - j;
-            
-            fprintf('Number of remaining voxels: %d .\n',remaining_voxels);
-            
-            %         % Increment every 100 voxels
-            %         sub_iter_num = sub_iter_num + 1;
-            %
-            %         % Update average each iteration (X_j_mean = X_j-1_mean*(N-1/N) + X_j/N)
-            %         duration_of_100_average = duration_of_100_average*((sub_iter_num - 1) / sub_iter_num ) + (duration_of_100/sub_iter_num);
-            %
-            %         WillFinishAround = start_time + ( ((num_voxels - j)/100)*duration_of_100_average ) /24/60/60;
-            %         disp(['Will finish around: ' datestr(WillFinishAround)]);
-            
-            % Finish calculation time
-            %par_iter(j) = Par.toc;
-        end
-        
-        
+        [ Flow_vec, Delay_sec_by_Max_Val, t_delay_single_gauss_sec_vec, sigma_seconds_single_gauss_vec, ...
+          Amp_single_gauss_vec, fitted_gaussian, fitted_double_gaussian, double_gaussian_param_vec, Ktrans_vec, Vb_vec, ...
+          Ve_vec, MTT_vec, Ktrans_Patlak_vec, Vb_Patlak_vec, MTT_Patlak_vec ] = Serial_Params_Est_Real_Data(Sim_Struct, Est_ht, Ct, AIF_delay_corrected, idx_fig );
+       
     end
     
-    
-    save(Mat_File_Perfusion_Parameters,'Flow_vec','t_delay_in_min_vec','t_delay_seconds_vec','est_var_vec','sigma_in_min_vec','sigma_seconds_vec',...
-        'Amp_vec','Ki_vec','Vb_vec','Ve_vec','MTT_vec','Ki_Patlak_vec','Vb_Patlak_vec',...
-        'MTT_Patlak_vec','Delay_sec_vec','double_gaussian_param_vec','calculated_gaussian','calculated_double_gaussian');
+    save(Mat_File_Perfusion_Parameters,'Flow_vec','t_delay_single_gauss_sec_vec','sigma_seconds_single_gauss_vec',...
+        'Amp_single_gauss_vec','Ktrans_vec','Vb_vec','Ve_vec','MTT_vec','Ktrans_Patlak_vec','Vb_Patlak_vec',...
+        'MTT_Patlak_vec','Delay_sec_by_Max_Val','double_gaussian_param_vec','fitted_gaussian','fitted_double_gaussian');
     
 end
 
-
-% Display performance analysis
-% stop(par_iter);
-% figure;
-% plot(par_iter);
-
 % Calculate RMS of convolution result comparing to Ct(t)
-RMS_params              = sqrt( sum( (calculated_gaussian        - Est_ht).^2 ,2) );
-RMS_params_double_gauss = sqrt( sum( (calculated_double_gaussian - Est_ht).^2 ,2) );
+RMS_params              = sqrt( sum( (fitted_gaussian        - Est_ht).^2 ,2) );
+RMS_params_double_gauss = sqrt( sum( (fitted_double_gaussian - Est_ht).^2 ,2) );
 
 %% Filter AIF through kernel
 
@@ -413,8 +242,8 @@ conv_result_ht       = filter(AIF*min_interval,1,Est_ht,[],2);
 
 % Filter the AIF with the gaussian kernel
 %conv_result_gaussian = filter(calculated_gaussian*min_interval,1,AIF);
-conv_result_gaussian        = filter(AIF*min_interval,1,calculated_gaussian,[],2);
-conv_result_double_gaussian = filter(AIF*min_interval,1,calculated_double_gaussian,[],2);
+conv_result_gaussian        = filter(AIF*min_interval,1,fitted_gaussian,[],2);
+conv_result_double_gaussian = filter(AIF*min_interval,1,fitted_double_gaussian,[],2);
 
 
 % Zero negative values

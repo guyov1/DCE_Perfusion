@@ -1,31 +1,16 @@
-function [ Sim_Struct ] = Simulation_Set_Params( Sim_Struct, Verbosity )
+function [ Sim_Struct ] = Simulation_Set_Params_F_New_4( Sim_Struct, Verbosity )
 
 if ~strcmp(Verbosity,'None')
     display('-I- Setting simulation parameters...');
 end
 
-% Real Data parameters
-Sim_Struct.RealData_Flag                 = true;  % Treat data as it were real one
-Sim_Struct.Parallel_Real_Data_Est        = true;  % Parallel the for loop in real data estimation
-Sim_Struct.Force_RealData_Calc           = true;  % Force the calculation of real data even if calculated bafore
-Sim_Struct.USE_ONE_GAUSSIAN              = false;
-Sim_Struct.USE_DOUBLE_GAUSSIAN           = false;
-Sim_Struct.USE_WIENER                    = false;
-Sim_Struct.USE_TICHONOV                  = true;
-
 % Force serial and not parallel
 Sim_Struct.FORCE_SERIAL                  = false;
 Sim_Struct.FORCE_MAIN_LOOP_SERIAL        = false;
-
 % Set number of iterations for simulation
-Sim_Struct.num_iterations                = 50; %15
-% Avoid memory overhead if there are too many iteratins
-if (Sim_Struct.num_iterations > 40)
-    Sim_Struct.FORCE_SERIAL                  = true;
-    Sim_Struct.FORCE_MAIN_LOOP_SERIAL        = true;
-end
+Sim_Struct.num_iterations                = 15; %16
 % Do each iteration a few time and average results for better statistic information
-Sim_Struct.num_averages                  = 1; %5
+Sim_Struct.num_averages                  = 5; %5
 % Determines SNR ( noise_var = mean(signal)/SNR_base )
 Sim_Struct.SNR_single                    = 15; %15 
 Sim_Struct.SNR_vec                       = linspace( 20, 1, Sim_Struct.num_iterations);
@@ -35,20 +20,20 @@ Sim_Struct.iterate_sec_interval          = 0; % Problematic (different array siz
 Sim_Struct.iterate_gaussian_sigma        = 0;
 Sim_Struct.iterate_gaussian_time_delay   = 0;
 Sim_Struct.iterate_gaussian_amplitude    = 0;
-Sim_Struct.iterate_F_larsson             = 0;
+Sim_Struct.iterate_F_larsson             = 1;
 Sim_Struct.iterate_Vb_larsson            = 0;
 Sim_Struct.iterate_E_larsson             = 0;
 Sim_Struct.iterate_Ve_larsson            = 0;
 Sim_Struct.iterate_AIF_delay             = 0;
-Sim_Struct.iterate_uniformly             = 1; % Uniformly generate parameters data
+Sim_Struct.iterate_uniformly             = 0; % Uniformly generate parameters data
 Sim_Struct.Add_Randomly_AIF_Delay        = 0;
 
 % Choose which Patlak estimation to take
 % Possible - 1. "Specified Points" 2. "All Points" 3. "Weighted Points"
-Sim_Struct.Patlak_Est_Type               = 'Specified Points';
+Sim_Struct.Patlak_Est                    = 'Specified Points';
 % Choose which filter estimation to use when calculating parameters (non-linear method)
 % Possible: 'Wiener', 'Ridge', 'Spline', 'Spline_1st', 'Spline_2nd', 'PCA', 'PCA_1st', 'PCA_2nd'
-Sim_Struct.Filter_Est_Chosen             = 'Spline_2nd';
+Sim_Struct.Filter_Est_Chosen             = 'Wiener';
 % Number of iterations for PCA basis creation
 Sim_Struct.Num_iterations_PCA            = 10000; 
 % Use the adjusted Larsson filter
@@ -79,7 +64,6 @@ Sim_Struct.sec_vec                  = round(Sim_Struct.sec_vec*2)/2;
 Sim_Struct.Fs                       = 1 / Sim_Struct.sec_interval; %[Hz] - Sampling rate
 Sim_Struct.min_interval             = Sim_Struct.sec_interval/60;  %[min]
 Sim_Struct.num_time_stamps          = round(Sim_Struct.total_sim_time_min / Sim_Struct.min_interval);
-Sim_Struct.num_voxels               = 0; % Use it for real data only
 % Time vector for AIF and Ct(t)
 Sim_Struct.time_vec_minutes         = (0 : Sim_Struct.num_time_stamps - 1).* Sim_Struct.min_interval;
 % High resolution before downsampling to min_interval
@@ -90,14 +74,9 @@ Sim_Struct.Derivative_Time_Devision = false;
 Sim_Struct.knots                    = Sim_Struct.time_vec_minutes(1:Sim_Struct.knot_interval:end);
 
 %% ------------------- AIF Parameters ------------------------------------
-
-% Add randomly delay to the AIF
-Sim_Struct.AIF_delay_low                 = 0;
-Sim_Struct.AIF_delay_max                 = 3;
-
 % Delay parameters
 Sim_Struct.additional_AIF_delay_sec     = +0.0; % Delay added to AIF before filtering
-Sim_Struct.additional_AIF_delay_sec_vec = linspace(Sim_Struct.AIF_delay_low, Sim_Struct.AIF_delay_max, Sim_Struct.num_iterations); % When iterating;;
+Sim_Struct.additional_AIF_delay_sec_vec = linspace(-1,3,Sim_Struct.num_iterations); % When iterating;;
 
 % AIF parameters - Parker's AIF
 % Factor for AIF to have realistic values like we see in MRI images
@@ -118,21 +97,22 @@ Sim_Struct.s        = 38.078;
 Sim_Struct.tau      = 0.483;
 
 % Apply cyclic convolution to compensate for AIF delay
-Sim_Struct.Use_Cyclic_Conv_4_ht_est               = false;      % Use cyclic de-convolution to correct for delay
-Sim_Struct.Cyclic_End_Padding                     = true;       % Pad at the beginning or end
-Sim_Struct.Use_Upsampling_and_Cyclic              = false;      % Use cyclic de-convolution to correct for delay + upsampling
-Sim_Struct.Use_Upsampling_Delay_Comp              = false;      % Upsample Ct(t) and AIF(t) to try and predict time shift in AIF
-Sim_Struct.Upsampling_resolution                  = 0.1 / 60;   % Set the upsampling target
-Sim_Struct.Correct_estimation_due_to_delay        = true;      % Try to correct for delay
-Sim_Struct.Max_Time_Delay                         = Sim_Struct.AIF_delay_max;  % Set the maximal possible time delay in seconds for correction
-Sim_Struct.Min_Time_Delay                         = Sim_Struct.AIF_delay_low;  % Set the minimal possible time delay in seconds for correction
-Sim_Struct.RMS_Smooth                             = true;       % When calculating RMS, smooth CTC first
-Sim_Struct.RMS_Smooth_Around_Bolus                = false;      % Calculate RMS around bolus only (to avoid noise aggregation afterwards)
-Sim_Struct.Simple_AIF_Delay_Correct               = false;      % Correct AIF by max point shift
-Sim_Struct.Diff_From_Bolus                        = 10;         % The difference in seconds from the bolus to look on
-Sim_Struct.BiExp2CTC_RMS_Ratio                    = 0;          % Sets the ratio between BiExp fit and CTC fit when estimating time delay
+Sim_Struct.Use_Cyclic_Conv_4_ht_est               = false;     % Use cyclic de-convolution to correct for delay
+Sim_Struct.Cyclic_End_Padding                     = false;     % Pad at the beginning or end
+Sim_Struct.Use_Upsampling_and_Cyclic              = false;     % Use cyclic de-convolution to correct for delay + upsampling
+Sim_Struct.Use_Upsampling_Delay_Comp              = false;     % Upsample Ct(t) and AIF(t) to try and predict time shift in AIF
+Sim_Struct.Upsampling_resolution                  = 0.1 / 60;  % Set the upsampling target
+Sim_Struct.Correct_estimation_due_to_delay        = false;      % Try to correct for delay
+Sim_Struct.RMS_Smooth                             = true;      % When calculating RMS, smooth CTC first
+Sim_Struct.RMS_Smooth_Around_Bolus                = false;     % Calculate RMS around bolus only (to avoid noise aggregation afterwards)
+Sim_Struct.Simple_AIF_Delay_Correct               = false;     % Correct AIF by max point shift
+Sim_Struct.Max_Time_Delay                         = 3;         % Set the maximal possible time delay in seconds
+Sim_Struct.Diff_From_Bolus                        = 10;        % The difference in seconds from the bolus to look on
+Sim_Struct.BiExp2CTC_RMS_Ratio                    = 0;         % Sets the ratio between BiExp fit and CTC fit when estimating time delay
 
-Sim_Struct.AIF_Scaling_Factor                     = 1;
+% Add randomly delay to the AIF
+Sim_Struct.AIF_delay_low                 = 0;
+Sim_Struct.AIF_delay_max                 = 3;
 
 %% ------------------- Gaussian Parameters ------------------------------------
 % Gaussian filter parameters
@@ -153,16 +133,10 @@ Sim_Struct.num_FFT_points               = 2000;
 Sim_Struct.FMS_TolFun          = 1e-11;
 Sim_Struct.FMS_MaxFunEvals     = 10000;
 Sim_Struct.FMS_MaxIter         = 10000;
+%FMS_Algorithm      = 'levenberg-marquardt'; % Does not supper lower-upper bounds
 Sim_Struct.FMS_Algorithm       = 'trust-region-reflective';
-%Sim_Struct.FMS_Algorithm       = 'fminsearch';
-%Sim_Struct.FMS_Algorithm       = 'levenberg-marquardt'; % Does not use lower-upper bounds
-
-if ~strcmp(Sim_Struct.FMS_Algorithm,'fminsearch')
-    Sim_Struct.algorithm_options   = optimset('TolFun',Sim_Struct.FMS_TolFun,'MaxFunEvals',Sim_Struct.FMS_MaxFunEvals,'MaxIter',Sim_Struct.FMS_MaxIter,...
-        'Display','off','Algorithm',Sim_Struct.FMS_Algorithm);
-else
-    Sim_Struct.algorithm_options   = optimset('MaxFunEvals', Sim_Struct.FMS_MaxFunEvals, 'MaxIter', Sim_Struct.FMS_MaxIter, 'TolFun', Sim_Struct.FMS_TolFun);
-end
+Sim_Struct.algorithm_options   = optimset('TolFun',Sim_Struct.FMS_TolFun,'MaxFunEvals',Sim_Struct.FMS_MaxFunEvals,'MaxIter',Sim_Struct.FMS_MaxIter,...
+    'Display','off','Algorithm',Sim_Struct.FMS_Algorithm);
 
 % Gaussian parameters boundaries for non-linear curve fitting
 % Time delay -> 0 to 60 seconds
@@ -171,30 +145,28 @@ end
 Sim_Struct.LowerBound_Gauss    = [0     0     0];
 Sim_Struct.UpperBound_Gauss    = [60/60 30/60 3];
 
+% Larsson parameters boundaries for non-linear curve fitting
+% Vb -> 0 to 100 [ml/100g]
+% E  -> 0 to 1
+% Ve -> 0 to 100 [ml/100g]
+Sim_Struct.LowerBound_Larsson  = [0   0     0];
+Sim_Struct.UpperBound_Larsson  = [100 1     100];
+
 %% ------------------- Larsson Filter Parameters ------------------------------------
 
 % Larsson filter parameters
 Sim_Struct.F_low      = 10;
 Sim_Struct.F_max      = 150;
-
-if Sim_Struct.RealData_Flag
-    Sim_Struct.Vb_low     = 0.1; % [mL/100g]     , they used 3,6,12,18
-    Sim_Struct.Vb_max     = 100;
-    Sim_Struct.Ve_low     = 0.1; % Must be smaller than Vtis
-    Sim_Struct.Ve_max     = 100;
-else
-    Sim_Struct.Vb_low     = 3; % [mL/100g]     , they used 3,6,12,18
-    Sim_Struct.Vb_max     = 20;
-    Sim_Struct.Ve_low     = 3; % Must be smaller than Vtis
-    Sim_Struct.Ve_max     = 20;
-end
-
+Sim_Struct.Vb_low     = 3; % [mL/100g]     , they used 3,6,12,18
+Sim_Struct.Vb_max     = 20; 
+Sim_Struct.Ve_low     = 3; % Must be smaller than Vtis
+Sim_Struct.Ve_max     = 20; 
 Sim_Struct.E_low      = 0;
 Sim_Struct.E_max      = 0.99;
 
 Sim_Struct.F_single   = 60;                                         % When a single iteration
 Sim_Struct.F_vec      = linspace(Sim_Struct.F_low, Sim_Struct.F_max, Sim_Struct.num_iterations); % When iterating
-Sim_Struct.Vb_single  = 18;
+Sim_Struct.Vb_single  = 12;
 Sim_Struct.Vb_vec     = linspace(Sim_Struct.Vb_low, Sim_Struct.Vb_max, Sim_Struct.num_iterations);
 Sim_Struct.E_single   = 0.1;
 Sim_Struct.E_vec      = linspace(Sim_Struct.E_low, Sim_Struct.E_max, Sim_Struct.num_iterations);
@@ -202,14 +174,6 @@ Sim_Struct.Ve_single  = 0.05; % 0.1
 Sim_Struct.Ve_vec     = linspace(Sim_Struct.Ve_low, Sim_Struct.Ve_max, Sim_Struct.num_iterations);
 
 Sim_Struct.Hct_single = 0.38;
-
-% Larsson parameters boundaries for non-linear curve fitting
-% Vb -> 0 to 100 [ml/100g]
-% E  -> 0 to 1
-% Ve -> 0 to 100 [ml/100g]
-Sim_Struct.LowerBound_Larsson  = [Sim_Struct.Vb_low Sim_Struct.E_low  Sim_Struct.Ve_low];
-Sim_Struct.UpperBound_Larsson  = [Sim_Struct.Vb_max Sim_Struct.E_max  Sim_Struct.Ve_max];
-Sim_Struct.init_Ve_guess       = 3;
 
 %% ------------------- Additional (Not Important) Parameters ------------------------------------
 
@@ -278,8 +242,8 @@ Sim_Struct.normalize     = 1;
 % 11-14. Gaussian:        original amplitude,  estimated amplitude, error percent and standard deviation
 % 15-18. Larsson filter:  original Flow,       estimated Flow, error percent and standard deviation
 % 19-22. AIF:             original delay,      estimated delay, error percent and standard deviation
-% 23-26. Larsson filter:  original Ktrans,     estimated Ktrans using Patlak, error percent and standard deviation
-% 27-30. Larsson filter:  original Ktrans,     estimated Ktrans using 2CXM, error percent and standard deviation
+% 23-26. Larsson filter:  original Ktrans,         estimated Ktrans using Patlak, error percent and standard deviation
+% 27-30. Larsson filter:  original Ktrans,         estimated Ktrans using 2CXM, error percent and standard deviation
 % 31-34. Larsson filter:  original PS,         estimated PS, error percent and standard deviation
 % 35-38. Larsson filter:  original Vb,         estimated Vb using Patlak, error percent and standard deviation
 % 39-42. Larsson filter:  original Vb,         estimated Vb using 2CXM, error percent and standard deviation
@@ -290,7 +254,7 @@ Sim_Struct.normalize     = 1;
 % 59-62. Larsson filter:  original E,          estimated E, error percent and standard deviation
 % 63-66. Gaussian filter: original AIF delay,  estimated AIF delay using Gaussian, error percent and standard deviation
 % 67-70. Sourbron method: original Flow,       estimated Flow, error percent and standard deviation 
-% 71-74. Sourbron method: original Ktrans,     estimated Ktrans using 2CXM, error percent and standard deviation
+% 71-74. Sourbron method: original Ktrans,         estimated Ktrans using 2CXM, error percent and standard deviation
 % 75-78. Sourbron method: original Vb,         estimated Vb using 2CXM, error percent and standard deviation
 % 79-82. Sourbron method: original Ve,         estimated Ve using 2CXM, error percent and standard deviation
 % 83-86. Larsson filter : original Ve,         estimated Ve using 2CXM, error percent and standard deviation

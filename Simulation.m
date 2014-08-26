@@ -47,6 +47,7 @@ Correct_estimation_due_to_delay = Sim_Struct.Correct_estimation_due_to_delay;
 Ignore_Gaussian_Calculation     = Sim_Struct.Ignore_Gaussian_Calculation;
 Check_Sourbron_Estimate         = Sim_Struct.Check_Sourbron_Estimate;
 num_results_parameters          = Sim_Struct.num_results_parameters;
+RealData_Flag                   = Sim_Struct.RealData_Flag;
 
 % Replicate simulation struct and figure index for parallel processing
 Sim_Struct_Replicated           = repmat(Sim_Struct,1,num_iterations);
@@ -61,18 +62,18 @@ if ~strcmp(Verbosity,'None')
 end
 
 if (num_iterations == 1 || Sim_Struct.FORCE_SERIAL || Sim_Struct.FORCE_MAIN_LOOP_SERIAL)
-    Simulation_Serial; % Copying the body of the parfor loop
+    [ results, Sim_Struct_Replicated, idx_fig_Rep] = Simulation_Serial( Sim_Struct_Replicated, idx_fig_Rep, results, num_iterations, num_averages, Verbosity, RealData_Flag); 
 else
-    Simulation_Parallel; 
+    [ results, Sim_Struct_Replicated, idx_fig_Rep] = Simulation_Parallel( Sim_Struct_Replicated, idx_fig_Rep, results, num_iterations, num_averages, Verbosity, RealData_Flag); 
 end
 
 time_finish = toc;
 display(sprintf('-I- Main Loop took %.2f seconds to finish...',time_finish));
 
 % Put the local loop variables in struct
-Sim_Struct.results       = results;
+Sim_Struct.results = results;
 % Update back the idx figure var
-idx_fig = idx_fig_Rep(1);
+idx_fig            = idx_fig_Rep(1);
 
 %% Results plotting and saving
 

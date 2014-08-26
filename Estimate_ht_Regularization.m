@@ -1,11 +1,10 @@
-function [ Return_Struct, idx_fig ] = Estimate_ht_Regularization( Sim_Struct, Verbosity, iter_num, avg_num, idx_fig )
+function [ Return_Struct, idx_fig ] = Estimate_ht_Regularization( Sim_Struct, Verbosity, iter_num, avg_num, idx_fig, RealData_Flag )
 
 % Take from struct variables used in local function
 Sim_Ct_larss_kernel             = Sim_Struct.Sim_Ct_larss_kernel;
 Sim_Ct_gauss_kernel             = Sim_Struct.Sim_Ct_gauss_kernel_noise;
 min_interval                    = Sim_Struct.min_interval;
 time_vec_minutes                = Sim_Struct.time_vec_minutes;
-gauss_filter                    = Sim_Struct.gauss_filter;
 Sim_AIF_no_noise                = Sim_Struct.Sim_AIF_no_noise;
 Sim_AIF_with_noise              = Sim_Struct.Sim_AIF_with_noise;
 Sim_Ct_gauss_kernel_noise       = Sim_Struct.Sim_Ct_gauss_kernel_noise;
@@ -64,12 +63,12 @@ else
     % Deconvolution by regularization for gauss filter
     [ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv, idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_gauss_Regul, Sim_Ct_gauss_Regul_noise,Conv_X,Conv_X_no_noise,time_vec_minutes,...
-        lambda_vec_gauss, normalize, min_interval(iter_num), B_mat, PCA_B_mat, plot_L_Curve, idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag );
+        lambda_vec_gauss, normalize, min_interval(iter_num), B_mat, PCA_B_mat, plot_L_Curve, idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag, RealData_Flag );
     
     % Deconvolution by regularization for larsson's filter
     [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv, idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise,Conv_X,Conv_X_no_noise,time_vec_minutes,...
-        lambda_vec_larss, normalize, min_interval(iter_num), B_mat, PCA_B_mat, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
+        lambda_vec_larss, normalize, min_interval(iter_num), B_mat, PCA_B_mat, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag, RealData_Flag );
     
 end
 
@@ -83,6 +82,7 @@ Return_Struct.ridge_regression_larss_result    = ridge_regression_larss_result;
 Return_Struct.b_spline_gauss_result            = b_spline_gauss_result;
 Return_Struct.b_spline_gauss_result_1st_deriv  = b_spline_gauss_result_1st_deriv;
 Return_Struct.b_spline_gauss_result_2nd_deriv  = b_spline_gauss_result_2nd_deriv;
+Return_Struct.b_PCA_gauss_result               = b_PCA_gauss_result;
 Return_Struct.b_PCA_gauss_result_1st_deriv     = b_PCA_gauss_result_1st_deriv;
 Return_Struct.b_PCA_gauss_result_2nd_deriv     = b_PCA_gauss_result_2nd_deriv;
 Return_Struct.Sim_Ct_larss_Regul               = Sim_Ct_larss_Regul;

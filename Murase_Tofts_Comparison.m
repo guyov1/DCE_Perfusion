@@ -45,7 +45,7 @@ for idx = 1 : Iterate_Murase_Tofts_num_iter
     
     % Report after each 100 voxels
     if ( mod(idx,1000) == 0 )
-        display(sprintf('Finished Regularization_Methods for %d voxels...',idx));
+        display(sprintf('Finished Regularization_Methods_Simulation for %d voxels...',idx));
         %remaining_voxels = num_voxels - j;
         %fprintf('Number of remaining voxels: %d .\n',remaining_voxels);
     end
@@ -64,7 +64,7 @@ for idx = 1 : Iterate_Murase_Tofts_num_iter
         E_Murase               = rand;                              % Extraction. They used 0,0.1,0.5,1
     end
     
-    Ki_Murase              = E_Murase * F_Murase;
+    Ktrans_Murase              = E_Murase * F_Murase;
     %Ve_larss_Murase        = 0.10 * ( 1 - (Vb_larss_Murase/100) )*100; % Must be smaller than Vtis
     
     if adjusted_larsson

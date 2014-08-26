@@ -7,7 +7,7 @@ Init_Guess_Gaussian             = Sim_Struct.Init_Guess_Gaussian;
 LowerBound_Gauss                = Sim_Struct.LowerBound_Gauss;
 UpperBound_Gauss                = Sim_Struct.UpperBound_Gauss;
 Sim_AIF_delayed_no_noise        = Sim_Struct.Sim_AIF_delayed_no_noise;
-Ki                              = Sim_Struct.Ki;
+Ktrans                          = Sim_Struct.Ktrans;
 F                               = Sim_Struct.F;
 E                               = Sim_Struct.E;
 PS                              = Sim_Struct.PS;
@@ -42,6 +42,7 @@ Ve_low                          = Sim_Struct.Ve_low;
 Ve_max                          = Sim_Struct.Ve_max;
 E_low                           = Sim_Struct.E_low;
 E_max                           = Sim_Struct.E_max;
+init_Ve_guess                   = Sim_Struct.init_Ve_guess;
 
 est_larss_filter_Wiener_noise   = Sim_Struct.est_larss_filter_Wiener_noise;
 ridge_regression_larss_result   = ht_Struct.ridge_regression_larss_result;
@@ -53,7 +54,7 @@ b_PCA_larss_result_1st_deriv    = ht_Struct.b_PCA_larss_result_1st_deriv;
 b_PCA_larss_result_2nd_deriv    = ht_Struct.b_PCA_larss_result_2nd_deriv;
 
 Final_Filter_Estimation_Larss   = ht_Struct.Final_Filter_Estimation_Larss;
-    
+
 if strcmp(Verbosity,'Full')
     display('-I- Estimating Larsson parameters...');
 end
@@ -75,9 +76,9 @@ end
 
 
 %% Patalk Estimation
-[est_Ki_Patlak_noise, est_Vb_Patlak_noise ,E_Patlak_est, idx_fig] = Patlak_Estimation(Sim_Struct, est_F_noise, Verbosity, iter_num, avg_num, idx_fig);
+[est_Ktrans_Patlak_noise, est_Vb_Patlak_noise ,est_E_Patlak_noise, est_MTT_Patlak_noise, idx_fig] = Patlak_Estimation(Sim_Struct, Sim_AIF_with_noise, Sim_Ct_larss_kernel_noise, est_F_noise, Verbosity, iter_num, avg_num, idx_fig);
 
-%% Using Murase estimation for Vb,Ki - Alternative to Patlak (Using estimated F)
+%% Using Murase estimation for Vb,Ktrans - Alternative to Patlak (Using estimated F)
 
 % -------------- Vb estimation ---------------
 %Sim_Ct_larss_kernel = filter(larss_filter*min_interval,1,Sim_AIF_delayed_no_noise);
@@ -91,12 +92,12 @@ diff_from_bolus_idx = round(diff_from_bolus_min/min_interval);
 stable_idx          = (bolus_idx + diff_from_bolus_idx) : length(Sim_AIF_with_noise(:,iter_num,avg_num));
 Vb_murase_estimate  = mean(Y_vec_Vb(stable_idx));
 
-% -------------- Ki estimation ---------------
-Y_vec_Ki            = ( Vb_murase_estimate*est_F_noise*cumtrapz(time_vec_minutes,Sim_AIF_delayed_no_noise) - ...
+% -------------- Ktrans estimation ---------------
+Y_vec_Ktrans            = ( Vb_murase_estimate*est_F_noise*cumtrapz(time_vec_minutes,Sim_AIF_delayed_no_noise) - ...
     - Sim_Ct_larss_kernel - est_F_noise* cumtrapz(time_vec_minutes,Sim_Ct_larss_kernel) ) ./ ...
     ( cumtrapz(time_vec_minutes,Sim_Ct_larss_kernel));
 
-Ki_murase_estimate  = mean(Y_vec_Ki(stable_idx));
+Ktrans_murase_estimate  = mean(Y_vec_Ktrans(stable_idx));
 
 
 if (plot_flag)
@@ -127,18 +128,18 @@ if (plot_flag)
     
     subplot(2,1,2);
     hold on;
-    h1 = plot(time_vec_minutes,Y_vec_Ki,'k*');
-    h2 = plot(time_vec_minutes(stable_idx),Y_vec_Ki(stable_idx),'og');
+    h1 = plot(time_vec_minutes,Y_vec_Ktrans,'k*');
+    h2 = plot(time_vec_minutes(stable_idx),Y_vec_Ktrans(stable_idx),'og');
     hold off;
-    title('Ki Murase Estimation','FontWeight','bold');
+    title('Ktrans Murase Estimation','FontWeight','bold');
     xlabel('Time [Min]');
-    legend([h1 h2],'Ki vector','Stable points for estimation');
+    legend([h1 h2],'Ktrans vector','Stable points for estimation');
     
     % Display Larsson's parameters
     annotation('textbox',...
         [0.7 0.09 0.3 0.1],...
-        'String',{['Ki = ' num2str(Ki) '  [mL/100g]'],...
-        ['Ki Murase = ' num2str(Ki_murase_estimate,'%.2f') '  [mL/100g]'],...
+        'String',{['Ktrans = ' num2str(Ktrans) '  [mL/100g]'],...
+        ['Ktrans Murase = ' num2str(Ktrans_murase_estimate,'%.2f') '  [mL/100g]'],...
         ['Vb = ' num2str(Vb_larss) '  [mL/100g]'],...
         ['Vb Murase = ' num2str(Vb_murase_estimate,'%.2f') '  [mL/100g]']},...
         'FontSize',8,...
@@ -150,15 +151,15 @@ if (plot_flag)
         'Color',[0.0 0.0 0]);
     
     % Print result to PDF
-    [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Vb_Ki_Murase_Estimate.png', './Run_Output/',...
-        'Murase Estimate for Vb, Ki', 'VbKiMuraseEst');
+    [idx_fig] = Print2Pdf(fig_num, idx_fig, 'Vb_Ktrans_Murase_Estimate.png', './Run_Output/',...
+        'Murase Estimate for Vb, Ktrans', 'VbKtransMuraseEst');
     
 end
 
 %% Estimate using two compartment model using initial Patlak's guess
 
 % Initial Guess for non-linear curve fitting for Larsson (Vb, E, Ve)
-Init_Guess_Larsson = [ est_Vb_Patlak_noise E_Patlak_est 5];
+Init_Guess_Larsson = [ est_Vb_Patlak_noise est_E_Patlak_noise init_Ve_guess];
 %Init_Guess_Larsson = [50 0.15 10];
 
 % The analytic funcational of a Larsson function
@@ -204,17 +205,48 @@ if strcmp(FMS_Algorithm,'trust-region-reflective')
         
         % F, Vb, E, Ve
         [est_params_Sourbron_noise,~,~,~,~] = ...
-        lsqcurvefit(Larsson_function_4_Sourbron,Init_Guess_Sourbron,time_vec_minutes',Final_Filter_Estimation_Larss/F_init_guess,...
-        LowerBound_Sourbron,UpperBound_Sourbron,algorithm_options);
+            lsqcurvefit(Larsson_function_4_Sourbron,Init_Guess_Sourbron,time_vec_minutes',Final_Filter_Estimation_Larss/F_init_guess,...
+            LowerBound_Sourbron,UpperBound_Sourbron,algorithm_options);
         
         
     end
     
 elseif strcmp(FMS_Algorithm,'levenberg-marquardt')
     
+    %     Bounded_Larsson_function             = @(x) BoundFunc(Larsson_function,x,LowerBound_Larsson,UpperBound_Larsson, time_vec_minutes, est_F_noise);
+    %     [~, Init_Guess_Larsson_Transformed]  = BoundFunc(Larsson_function,Init_Guess_Larsson,LowerBound_Larsson,UpperBound_Larsson, time_vec_minutes, est_F_noise);
+    %
+    %     Larsson_function             = @(x,t) Adjusted_Larsson_Filter( t, est_F_noise, x(1), x(2), x(3));
+    %
+    %     ydata    = (Final_Filter_Estimation_Larss'/est_F_noise);
+    %     RMSCost  = @(vec) sum(vec.^2);
+    %     CostFunc = @(x) RMSCost( Bounded_Larsson_function(x) - ydata );
+    %     best_transformedParams    = fminsearch(CostFunc, Init_Guess_Larsson_Transformed);
+    %     % Transform back
+    %     %est_params_Larsson_noise = ReverseTransformation(best_transformedParams, LowerBound_Larsson, UpperBound_Larsson);
+    
+    Unbounded_Larsson_function = @(x,t) Larsson_function(BoundFunc(x,LowerBound_Larsson,UpperBound_Larsson),t);
+    
     [est_params_Larsson_noise,residue_norm_Larsson_noise,residual_Larsson_noise,exitflag_Larsson_noise,algo_info_Larsson_noise] = ...
-        lsqcurvefit(Larsson_function,Init_Guess_Larsson,time_vec_minutes',Final_Filter_Estimation_Larss/est_F_noise,...
+        lsqcurvefit(Unbounded_Larsson_function,Init_Guess_Larsson,time_vec_minutes',Final_Filter_Estimation_Larss/est_F_noise,...
         [],[],algorithm_options);
+    
+    est_params_Larsson_noise = BoundFunc(est_params_Larsson_noise,LowerBound_Larsson,UpperBound_Larsson);
+    
+elseif strcmp(FMS_Algorithm,'fminsearch')
+    
+    Unbounded_Larsson_function = @(x,t) Larsson_function(BoundFunc(x,LowerBound_Larsson,UpperBound_Larsson),t);
+    ydata    = Final_Filter_Estimation_Larss/est_F_noise;
+    RMSCost  = @(vec) sum(vec.^2);
+    CostFunc = @(x) RMSCost( Unbounded_Larsson_function(x,time_vec_minutes') - ydata );
+    best_transformedParams    = fminsearch(CostFunc, Init_Guess_Larsson, Sim_Struct.algorithm_options);
+    est_params_Larsson_noise = BoundFunc(best_transformedParams,LowerBound_Larsson,UpperBound_Larsson);
+    
+    
+    
+    %     [est_params_Larsson_noise,residue_norm_Larsson_noise,residual_Larsson_noise,exitflag_Larsson_noise,algo_info_Larsson_noise] = ...
+    %         lsqcurvefit(Larsson_function,Init_Guess_Larsson,time_vec_minutes',Final_Filter_Estimation_Larss/est_F_noise,...
+    %         [],[],algorithm_options);
     
     % Estimate gaussian parameters when Larss filter is used
     if ~Ignore_Gaussian_Calculation
@@ -237,8 +269,8 @@ elseif strcmp(FMS_Algorithm,'levenberg-marquardt')
         
         % F, Vb, E, Ve
         [est_params_Sourbron_noise,~,~,~,~] = ...
-        lsqcurvefit(Larsson_function,Init_Guess_Sourbron,time_vec_minutes',Final_Filter_Estimation_Larss/F_init_guess,...
-        [],[],algorithm_options);
+            lsqcurvefit(Larsson_function,Init_Guess_Sourbron,time_vec_minutes',Final_Filter_Estimation_Larss/F_init_guess,...
+            [],[],algorithm_options);
         
     end
     
@@ -254,7 +286,7 @@ end
 % Assigning two compartment parameters estimation
 est_Vb_Two_Comp_noise           = est_params_Larsson_noise(1);
 est_E_Two_Comp_noise            = est_params_Larsson_noise(2);
-est_Ki_Two_Comp_noise           = est_E_Two_Comp_noise * est_F_noise;
+est_Ktrans_Two_Comp_noise           = est_E_Two_Comp_noise * est_F_noise;
 est_Ve_Two_Comp_noise           = est_params_Larsson_noise(3);
 
 % Assigning two compartment parameters estimation using Sourbron
@@ -262,7 +294,7 @@ if Check_Sourbron_Estimate
     est_F_Two_Comp_Sourbron_noise               = est_params_Sourbron_noise(1);
     est_Vb_Two_Comp_Sourbron_noise              = est_params_Sourbron_noise(2);
     E_Two_Comp_Sourbron_est                     = est_params_Sourbron_noise(3);
-    est_Ki_Two_Comp_Sourbron_noise              = E_Two_Comp_Sourbron_est * est_F_Two_Comp_Sourbron_noise;
+    est_Ktrans_Two_Comp_Sourbron_noise              = E_Two_Comp_Sourbron_est * est_F_Two_Comp_Sourbron_noise;
     Ve_Two_Comp_Sourbron_est                    = est_params_Sourbron_noise(4);
 end
 
@@ -277,12 +309,12 @@ est_Vd_normal_tis_noise         = est_F_noise * est_MTT_normal_tis_noise;
 % Estimate E
 est_E_noise                     = est_E_Two_Comp_noise;
 % Estimate PS
-est_PS_noise                    = -est_F_noise*log(1-est_Ki_Two_Comp_noise/est_F_noise);
+est_PS_noise                    = -est_F_noise*log(1-est_Ktrans_Two_Comp_noise/est_F_noise);
 
 % Create the estimated filter out of the non-linear parameters estimation
 if (adjusted_larsson)
     Filter_estimation_result  = est_F_noise * Adjusted_Larsson_Filter( time_vec_minutes', est_F_noise , ...
-        est_Vb_Two_Comp_noise, est_E_Two_Comp_noise , est_Ve_Two_Comp_noise); 
+        est_Vb_Two_Comp_noise, est_E_Two_Comp_noise , est_Ve_Two_Comp_noise);
 else
     Filter_estimation_result  = est_F_noise * Larsson_Filter( time_vec_minutes', est_F_noise , ...
         est_Vb_Two_Comp_noise, est_E_Two_Comp_noise , est_Ve_Two_Comp_noise, Hct(iter_num));
@@ -408,7 +440,7 @@ if (plot_flag)
         [0 0 1 1],...
         'String',{'Larsson Filter Original Params:','',['F         = ' num2str(F,'%.2f') '        [mL/100g/min]'],...
         ['Delay  = ' num2str(additional_AIF_delay_sec,'%.2f') '          [sec]'],...
-        ['Ki        = ' num2str(Ki,'%.2f') '          [mL/100g/min]'],...
+        ['Ktrans        = ' num2str(Ktrans,'%.2f') '          [mL/100g/min]'],...
         ['PS      = ' num2str(PS,'%.2f') '           [mL/100g/min]'],...
         ['Vb       = ' num2str(Vb_larss,'%.2f') '        [mL/100g]'],...
         ['Ve       = ' num2str(Ve_larss,'%.2f') '          [mL/100g]'],...
@@ -423,9 +455,9 @@ if (plot_flag)
         '       [Sec]'],...
         ['Delay-Gauss          = ' num2str(est_t_d_noise,'%.2f') ...
         '       [Sec]'],...
-        ['Ki-Patlak                 = ' num2str(est_Ki_Patlak_noise,'%.2f') '       [mL/100g/min]'],...
-        ['Ki-Two-Comp         = ' num2str(est_Ki_Two_Comp_noise,'%.2f') '        [mL/100g/min]'],...
-        ['E-Patlak                  = ' num2str(E_Patlak_est,'%.2f')],...
+        ['Ktrans-Patlak                 = ' num2str(est_Ktrans_Patlak_noise,'%.2f') '       [mL/100g/min]'],...
+        ['Ktrans-Two-Comp         = ' num2str(est_Ktrans_Two_Comp_noise,'%.2f') '        [mL/100g/min]'],...
+        ['E-Patlak                  = ' num2str(est_E_Patlak_noise,'%.2f')],...
         ['E-Two-Comp          = ' num2str(est_E_Two_Comp_noise,'%.2f')],...
         ['PS-est                     = ' num2str(est_PS_noise,'%.2f') '       [mL/100g/min]'],...
         ['Vb-Patlak                = ' num2str( est_Vb_Patlak_noise,'%.2f') '     [mL/100g]'],...
@@ -451,11 +483,11 @@ end
 % Return vals
 Return_Struct.est_F_noise                        = est_F_noise;
 Return_Struct.est_Vb_Patlak_noise                = est_Vb_Patlak_noise;
-Return_Struct.E_Patlak_est                       = E_Patlak_est;
-Return_Struct.est_Ki_Patlak_noise                = est_Ki_Patlak_noise;
+Return_Struct.E_Patlak_est                       = est_E_Patlak_noise;
+Return_Struct.est_Ktrans_Patlak_noise                = est_Ktrans_Patlak_noise;
 Return_Struct.est_Delay_sec_using_Gaussian_noise = est_Delay_sec_using_Gaussian_noise;
 Return_Struct.est_Delay_sec_noise                = est_Delay_sec_noise;
-Return_Struct.est_Ki_Two_Comp_noise              = est_Ki_Two_Comp_noise;
+Return_Struct.est_Ktrans_Two_Comp_noise              = est_Ktrans_Two_Comp_noise;
 Return_Struct.est_E_noise                        = est_E_noise;
 Return_Struct.est_PS_noise                       = est_PS_noise;
 Return_Struct.est_Vb_Two_Comp_noise              = est_Vb_Two_Comp_noise;
@@ -467,9 +499,9 @@ Return_Struct.est_MTT_normal_tis_noise           = est_MTT_normal_tis_noise;
 
 if Check_Sourbron_Estimate
     Return_Struct.est_F_Two_Comp_Sourbron_noise  = est_F_Two_Comp_Sourbron_noise;
-    Return_Struct.est_Vb_Two_Comp_Sourbron_noise = est_Vb_Two_Comp_Sourbron_noise; 
-    Return_Struct.est_Ki_Two_Comp_Sourbron_noise = est_Ki_Two_Comp_Sourbron_noise;
-    Return_Struct.Ve_Two_Comp_Sourbron_est       = Ve_Two_Comp_Sourbron_est;   
+    Return_Struct.est_Vb_Two_Comp_Sourbron_noise = est_Vb_Two_Comp_Sourbron_noise;
+    Return_Struct.est_Ktrans_Two_Comp_Sourbron_noise = est_Ktrans_Two_Comp_Sourbron_noise;
+    Return_Struct.Ve_Two_Comp_Sourbron_est       = Ve_Two_Comp_Sourbron_est;
 end
 
 end

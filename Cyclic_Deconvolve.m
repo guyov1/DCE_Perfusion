@@ -24,6 +24,7 @@ total_sim_time_min               = Sim_Struct.total_sim_time_min;
 knots                            = Sim_Struct.knots;
 poly_deg                         = Sim_Struct.poly_deg;
 Use_Upsampling_and_Cyclic        = Sim_Struct.Use_Upsampling_and_Cyclic;
+RealData_Flag                    = Sim_Struct.RealData_Flag;
 
 % Cyclic de-convolution
 
@@ -64,12 +65,12 @@ B_PCA_cyclic          = B_PCA_cyclic(:,1:num_cols_B_mat_cyclic);
 % Deconvolution by regularization for gauss filter
 [ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv, Sim_Struct.idx_fig]...
     = Regularization_Methods_Simulation(Sim_Ct_gauss_Regul_padded,Sim_Ct_gauss_Regul_noise_padded,Conv_X_cyclic,Conv_X_cyclic_no_noise,time_vec_minutes_padded,...
-    lambda_vec_gauss, normalize, min_interval(iter_num), B_mat_cyclic, B_PCA_cyclic, plot_L_Curve, Sim_Struct.idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag );
+    lambda_vec_gauss, normalize, min_interval(iter_num), B_mat_cyclic, B_PCA_cyclic, plot_L_Curve, Sim_Struct.idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag, RealData_Flag );
 
 % Deconvolution by regularization for larsson's filter
 [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv, Sim_Struct.idx_fig]...
     = Regularization_Methods_Simulation(Sim_Ct_larss_Regul_padded,Sim_Ct_larss_Regul_noise_padded,Conv_X_cyclic,Conv_X_cyclic_no_noise,time_vec_minutes_padded,...
-    lambda_vec_larss, normalize, min_interval(iter_num), B_mat_cyclic, B_PCA_cyclic,  plot_L_Curve, Sim_Struct.idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
+    lambda_vec_larss, normalize, min_interval(iter_num), B_mat_cyclic, B_PCA_cyclic,  plot_L_Curve, Sim_Struct.idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag, RealData_Flag );
 
 % Remove the padding out of the h_t result
 if Sim_Struct.Cyclic_End_Padding
@@ -162,12 +163,12 @@ if (Use_Upsampling_and_Cyclic)
     % Deconvolution by regularization for gauss filter
     [ridge_regression_gauss_result, b_spline_gauss_result, b_spline_gauss_result_1st_deriv, b_spline_gauss_result_2nd_deriv, b_PCA_gauss_result, b_PCA_gauss_result_1st_deriv, b_PCA_gauss_result_2nd_deriv, Sim_Struct.idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_gauss_Regul_up_samp,Sim_Ct_gauss_Regul_noise_up_samp,Conv_X_up_samp,Conv_X_up_samp_no_noise,time_vec_minutes_up_samp,...
-        lambda_vec_gauss, normalize, Upsampling_resolution, B_mat_cyclic_upsmp, B_PCA_cyclic_upsmp, plot_L_Curve, Sim_Struct.idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag );
+        lambda_vec_gauss, normalize, Upsampling_resolution, B_mat_cyclic_upsmp, B_PCA_cyclic_upsmp, plot_L_Curve, Sim_Struct.idx_fig , 'Gauss' , Derivative_Time_Devision, plot_flag, RealData_Flag );
     
     % Deconvolution by regularization for larsson's filter
     [ridge_regression_larss_result, b_spline_larss_result, b_spline_larss_result_1st_deriv, b_spline_larss_result_2nd_deriv, b_PCA_larss_result, b_PCA_larss_result_1st_deriv, b_PCA_larss_result_2nd_deriv, Sim_Struct.idx_fig]...
         = Regularization_Methods_Simulation(Sim_Ct_larss_Regul_up_samp,Sim_Ct_larss_Regul_noise_up_samp,Conv_X_up_samp,Conv_X_up_samp_no_noise,time_vec_minutes_up_samp,...
-        lambda_vec_larss, normalize, Upsampling_resolution, B_mat_cyclic_upsmp, B_PCA_cyclic_upsmp, plot_L_Curve, Sim_Struct.idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
+        lambda_vec_larss, normalize, Upsampling_resolution, B_mat_cyclic_upsmp, B_PCA_cyclic_upsmp, plot_L_Curve, Sim_Struct.idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag, RealData_Flag );
     
     % Remove the padding out of the h_t result
     

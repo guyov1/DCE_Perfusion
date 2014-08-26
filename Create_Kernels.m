@@ -110,9 +110,9 @@ Sim_Struct.Vd                     = Sim_Struct.Vb_larss + Sim_Struct.Ve_larss;
 Sim_Struct.MTT                    = cumtrapz(time_vec_minutes,Sim_Struct.IRF_larss);
 Sim_Struct.MTT                    = Sim_Struct.MTT(end,:);
 Sim_Struct.Vd                     = Sim_Struct.Vb_larss + Sim_Struct.Ve_larss; %Vd = F * MTT;
-Sim_Struct.Ki                     = Sim_Struct.E .* Sim_Struct.F;
+Sim_Struct.Ktrans                     = Sim_Struct.E .* Sim_Struct.F;
 
-%Sim_Struct.PS                     = -Sim_Struct.F .* log(1-(Sim_Struct.Ki ./ Sim_Struct.F));
+%Sim_Struct.PS                     = -Sim_Struct.F .* log(1-(Sim_Struct.Ktrans ./ Sim_Struct.F));
 Sim_Struct.PS                     = ( Sim_Struct.E .* Sim_Struct.F ) ./ (1 - Sim_Struct.E);                             % [mL/100g/min]
 
 % ------------------------
@@ -120,7 +120,7 @@ Sim_Struct.PS                     = ( Sim_Struct.E .* Sim_Struct.F ) ./ (1 - Sim
 % as described in Sourbron's article
 % ------------------------
 Sim_Struct.Fp                = Sim_Struct.F;                            % [mL/100g/min], Same as Fp in article
-Sim_Struct.Fe                = Sim_Struct.PS; %Sim_Struct.Ki
+Sim_Struct.Fe                = Sim_Struct.PS; %Sim_Struct.Ktrans
 Sim_Struct.Vp_sourbron       = Sim_Struct.Vb_larss;
 Sim_Struct.Ve_sourbron       = Sim_Struct.Ve_larss; % Must be smaller than Vtis
 
@@ -167,7 +167,7 @@ end
 % ------------------------
 Sim_Struct.vb_delta               = zeros(size(Sim_Struct.larss_filter));
 Sim_Struct.vb_delta(1,:)          = Sim_Struct.Vb_larss;
-Sim_Struct.Patlak_filter          = Sim_Struct.vb_delta + repmat(Sim_Struct.Ki, [size(Sim_Struct.larss_filter,1) 1]); % [mL/100g/min]
+Sim_Struct.Patlak_filter          = Sim_Struct.vb_delta + repmat(Sim_Struct.Ktrans, [size(Sim_Struct.larss_filter,1) 1]); % [mL/100g/min]
 
 time_finish = toc;
 if ~strcmp(Verbosity,'None')

@@ -15,10 +15,10 @@ est_t_d_Larss_vec_sec       = results(20,:);
 error_percent_t_d_Larss     = results(21,:);
 std_t_d_Larss_sec           = results(22,:);
 
-real_larsson_Ki_vec          = results(27,:);
-est_larsson_Ki_vec           = results(28,:);
-error_percent_Ki             = results(29,:);
-std_Ki                       = results(30,:);
+real_larsson_Ktrans_vec          = results(27,:);
+est_larsson_Ktrans_vec           = results(28,:);
+error_percent_Ktrans             = results(29,:);
+std_Ktrans                       = results(30,:);
 
 real_larsson_Vb_vec          = results(39,:);
 est_larsson_Vb_vec           = results(40,:);
@@ -33,10 +33,10 @@ std_t_d_Larss_sec_last      = std_t_d_Larss_sec;
 error_percent_F_last        = error_percent_F;
 std_F_last                  = std_F;
 
-real_larsson_Ki_vec_last          = real_larsson_Ki_vec;
-est_larsson_Ki_vec_last           = est_larsson_Ki_vec;
-error_percent_Ki_last             = error_percent_Ki;
-std_Ki_last                       = std_Ki;
+real_larsson_Ktrans_vec_last          = real_larsson_Ktrans_vec;
+est_larsson_Ktrans_vec_last           = est_larsson_Ktrans_vec;
+error_percent_Ktrans_last             = error_percent_Ktrans;
+std_Ktrans_last                       = std_Ktrans;
 
 real_larsson_Vb_vec_last          = real_larsson_Vb_vec;
 est_larsson_Vb_vec_last           = est_larsson_Vb_vec;
@@ -45,7 +45,7 @@ std_Vb_last                       = std_Vb;
 
 save('./Run_Output/Last_Iter_Vars.mat', 'real_larsson_F_vec_last','real_t_d_Larss_vec_sec_last',...
                                         'est_t_d_Larss_vec_sec_last','std_t_d_Larss_sec_last','error_percent_F_last','std_F_last',...
-                                        'real_larsson_Ki_vec_last','est_larsson_Ki_vec_last','error_percent_Ki_last','std_Ki_last',...
+                                        'real_larsson_Ktrans_vec_last','est_larsson_Ktrans_vec_last','error_percent_Ktrans_last','std_Ktrans_last',...
                                         'real_larsson_Vb_vec_last','est_larsson_Vb_vec_last','error_percent_Vb_last','std_Vb_last');
 
 real_larsson_F_vec_last2     = real_larsson_F_vec;
@@ -81,10 +81,10 @@ est_t_d_Larss_vec_sec       = results(20,:);
 error_percent_t_d_Larss     = results(21,:);
 std_t_d_Larss_sec           = results(22,:);
 
-real_larsson_Ki_vec          = results(27,:);
-est_larsson_Ki_vec           = results(28,:);
-error_percent_Ki             = results(29,:);
-std_Ki                       = results(30,:);
+real_larsson_Ktrans_vec          = results(27,:);
+est_larsson_Ktrans_vec           = results(28,:);
+error_percent_Ktrans             = results(29,:);
+std_Ktrans                       = results(30,:);
 
 real_larsson_Vb_vec          = results(39,:);
 est_larsson_Vb_vec           = results(40,:);
@@ -112,16 +112,16 @@ xlabel('AIF delay [Sec]');
 ylabel('Error percent');
 legend([h1 h2],'No Correction','With Correction'); 
 
-%% Ki error vs AIF delay
+%% Ktrans error vs AIF delay
 fig_num = figure;
 %plot(real_sigma_vec,error_percent_sigma);
-h1 = errorbar(real_t_d_Larss_vec_sec,error_percent_Ki,std_Ki,'b*');
+h1 = errorbar(real_t_d_Larss_vec_sec,error_percent_Ktrans,std_Ktrans,'b*');
 
 hold on;
-h2 = errorbar(real_t_d_Larss_vec_sec_last,error_percent_Ki_last,std_Ki_last,'go');
+h2 = errorbar(real_t_d_Larss_vec_sec_last,error_percent_Ktrans_last,std_Ktrans_last,'go');
 hold off;
 
-title_string = sprintf('est. Ki error vs. AIF Delay. Vb=%d, E=%.2f, F=%.2f',Vb_single,E_single,real_larsson_Ki_vec(1));
+title_string = sprintf('est. Ktrans error vs. AIF Delay. Vb=%d, E=%.2f, F=%.2f',Vb_single,E_single,real_larsson_Ktrans_vec(1));
 title(title_string,'FontWeight','bold');
 xlabel('AIF delay [Sec]');
 ylabel('Error percent');

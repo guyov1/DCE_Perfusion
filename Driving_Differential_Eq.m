@@ -22,7 +22,7 @@ r_factor                 = Sim_Struct.r_factor;
 total_sim_time_min       = Sim_Struct.total_sim_time_min;
 Hct                      = Sim_Struct.Hct;
 F                        = Sim_Struct.F;
-Ki                       = Sim_Struct.Ki;
+Ktrans                   = Sim_Struct.Ktrans;
 Ve_larss                 = Sim_Struct.Ve_larss;
 Vb_larss                 = Sim_Struct.Vb_larss;
 E                        = Sim_Struct.E;
@@ -45,7 +45,7 @@ Sim_AIF_HighRes            = Sim_AIF_HighRes * r_factor;
 % Driving the differential equation to get Cb(nT) and Ce(nT)
 [ Cb_vec, Ce_vec ]         = Larsson_Differential_Equation( time_vec_minutes_HighRes, Vb_larss(iter_idx),...
                                                             Ve_larss(iter_idx), Sim_AIF_HighRes, Hct(iter_idx),...
-                                                            F(iter_idx), Ki(iter_idx));
+                                                            F(iter_idx), Ktrans(iter_idx));
 % Creating high resolution larsson filter
 if (adjusted_larsson)
     IRF_larss_HighRes          = Adjusted_Larsson_Filter(time_vec_minutes_HighRes, F(iter_idx),...

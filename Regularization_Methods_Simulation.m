@@ -1,6 +1,6 @@
 function [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ] = ...
     Regularization_Methods_Simulation( Sim_Ct_T, Sim_Ct_T_noise, Conv_Matrix, Conv_Matrix_no_noise, time_vec_minutes, lambda_vec, normalize,...
-    min_interval, B_mat, B_PCA, plot_L_curve, idx_fig, filter_type, Derivative_Time_Devision, plot_flag )
+    min_interval, B_mat, B_PCA, plot_L_curve, idx_fig, filter_type, Derivative_Time_Devision, plot_flag, RealData_Flag )
 
 % Regularization_Methods_Simulation - Implement deconvolution by regularization
 %
@@ -39,12 +39,13 @@ function [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, 
 x0     = zeros(size(Sim_Ct_T_noise));
 knots0 = zeros(size(B_mat,2),1);
 
-[ ridge_regression_result ] = Regularized_Sol( Conv_Matrix      , Sim_Ct_T_noise, x0    , lambda_vec(1), normalize, 1);
-[ knots_coeff ]             = Regularized_Sol( Conv_Matrix*B_mat, Sim_Ct_T_noise, knots0, lambda_vec(2), normalize, 0);
-
-
-% Using derivative regularization constraint
-num_points   = length(Sim_Ct_T_noise);
+if ~RealData_Flag
+    [ ridge_regression_result ] = Regularized_Sol( Conv_Matrix      , Sim_Ct_T_noise, x0    , lambda_vec(1), normalize, 1);
+    [ knots_coeff ]             = Regularized_Sol( Conv_Matrix*B_mat, Sim_Ct_T_noise, knots0, lambda_vec(2), normalize, 0);
+    
+    % Using derivative regularization constraint
+    num_points   = length(Sim_Ct_T_noise);
+end
 
 % --------------------------------------------------------------------------------
 % First derivative
@@ -57,16 +58,16 @@ end
 
 %deriv_matrix(50:end,:) = 500*deriv_matrix(50:end,:);
 % Second derivative
-deriv_matrix_2nd =  deriv_matrix_1st * deriv_matrix_1st;
+deriv_matrix_2nd =  deriv_matrix_1st * deriv_matrix_1st ;
 %deriv_matrix_2 =  (1/min_interval)*toeplitz([1,zeros(1,num_points-1)],[[1 -2 1],zeros(1,num_points-3)]);
 
 
 % Display Knots and its derivatives when no noise in encountered
-if (plot_flag)
+if (plot_flag && ~RealData_Flag)
     
     [ knots_coeff_4_display ]       = Regularized_Sol( Conv_Matrix_no_noise*B_mat , Sim_Ct_T, knots0, 0, 1, 0);
     [ knots_coeff_4_display_noisy ] = Regularized_Sol( Conv_Matrix*B_mat          , Sim_Ct_T_noise, knots0, 0, 1, 0);
-
+    
     
     b_spline_result_4_display       = B_mat*knots_coeff_4_display;
     b_spline_result_4_display_noisy = B_mat*knots_coeff_4_display_noisy;
@@ -113,49 +114,44 @@ end
 %
 %A_new_1 = Conv_Matrix*inv(deriv_matrix)  *B_mat;
 %A_new_2 = Conv_Matrix*inv(deriv_matrix_2)*B_mat;
-
-A_new_1 = Conv_Matrix*B_mat*inv(deriv_matrix_1st);
+if ~RealData_Flag
+    A_new_1 = Conv_Matrix*B_mat*inv(deriv_matrix_1st);
+end
 A_new_2 = Conv_Matrix*B_mat*inv(deriv_matrix_2nd);
 
-PCA_deriv_matrix_1 = deriv_matrix_1st;
-PCA_deriv_matrix_2 = deriv_matrix_2nd;
-%PCA_deriv_matrix = deriv_matrix;
-A_PCA              = Conv_Matrix * B_PCA;
-A_PCA_1            = Conv_Matrix * B_PCA * inv(PCA_deriv_matrix_1);
-A_PCA_2            = Conv_Matrix * B_PCA * inv(PCA_deriv_matrix_2);
+if ~RealData_Flag
+    PCA_deriv_matrix_1 = deriv_matrix_1st;
+    PCA_deriv_matrix_2 = deriv_matrix_2nd;
+    %PCA_deriv_matrix = deriv_matrix;
+    A_PCA              = Conv_Matrix * B_PCA;
+    A_PCA_1            = Conv_Matrix * B_PCA * inv(PCA_deriv_matrix_1);
+    A_PCA_2            = Conv_Matrix * B_PCA * inv(PCA_deriv_matrix_2);
+end
 
 % --------------------------------------------------------------------------------
 
-[ knots_coeff_2 ]     = Regularized_Sol( A_new_1    , Sim_Ct_T_noise, knots0, lambda_vec(3), normalize, 0);
-[ knots_coeff_3 ]     = Regularized_Sol( A_new_2    , Sim_Ct_T_noise, knots0, lambda_vec(4), normalize, 0 );
+if ~RealData_Flag
+    
+    [ knots_coeff_PCA ]   = Regularized_Sol( A_PCA      , Sim_Ct_T_noise, knots0, lambda_vec(5), normalize, 0 );
+    [ knots_coeff_PCA_1 ] = Regularized_Sol( A_PCA_1    , Sim_Ct_T_noise, knots0, lambda_vec(6), normalize, 0 );
+    [ knots_coeff_PCA_2 ] = Regularized_Sol( A_PCA_2    , Sim_Ct_T_noise, knots0, lambda_vec(7), normalize, 0 );
+    [ knots_coeff_2 ]     = Regularized_Sol( A_new_1    , Sim_Ct_T_noise, knots0, lambda_vec(3), normalize, 0);
+    
+    inv_matrix_PCA_1st_deriv  = B_PCA * inv(PCA_deriv_matrix_1);
+    inv_matrix_PCA_2nd_deriv  = B_PCA * inv(PCA_deriv_matrix_2);
+    inv_matrix_1st_deriv      = B_mat * inv(deriv_matrix_1st) ;
+    
+    b_PCA_larss_result        = B_PCA        * knots_coeff_PCA;
+    b_PCA_result_1st_deriv    = inv_matrix_PCA_1st_deriv * knots_coeff_PCA_1;
+    b_PCA_result_2nd_deriv    = inv_matrix_PCA_2nd_deriv * knots_coeff_PCA_2;
+    b_spline_result           = B_mat        * knots_coeff;
+    b_spline_result_1st_deriv = inv_matrix_1st_deriv * knots_coeff_2;
 
-[ knots_coeff_PCA ]   = Regularized_Sol( A_PCA      , Sim_Ct_T_noise, knots0, lambda_vec(5), normalize, 0 );
-[ knots_coeff_PCA_1 ] = Regularized_Sol( A_PCA_1    , Sim_Ct_T_noise, knots0, lambda_vec(6), normalize, 0 );
-[ knots_coeff_PCA_2 ] = Regularized_Sol( A_PCA_2    , Sim_Ct_T_noise, knots0, lambda_vec(7), normalize, 0 );
+end
 
-
-% --------------------------------------------------------------------------------
-% b_spline_result_1st_deriv = B_mat*knots_coeff_2;
-% b_spline_result_1st_deriv = inv(deriv_matrix)*b_spline_result_1st_deriv;
-% b_spline_result_2nd_deriv = B_mat*knots_coeff_3;
-% b_spline_result_2nd_deriv = inv(deriv_matrix_2)*b_spline_result_2nd_deriv;
-inv_matrix_1st_deriv      = B_mat * inv(deriv_matrix_1st) ;
+[ knots_coeff_3 ]         = Regularized_Sol( A_new_2    , Sim_Ct_T_noise, knots0, lambda_vec(4), normalize, 0 );
 inv_matrix_2nd_deriv      = B_mat * inv(deriv_matrix_2nd);
-inv_matrix_PCA_1st_deriv  = B_PCA * inv(PCA_deriv_matrix_1);
-inv_matrix_PCA_2nd_deriv  = B_PCA * inv(PCA_deriv_matrix_2);
-
-b_spline_result           = B_mat        * knots_coeff;
-b_spline_result_1st_deriv = inv_matrix_1st_deriv * knots_coeff_2;
 b_spline_result_2nd_deriv = inv_matrix_2nd_deriv * knots_coeff_3;
-b_PCA_larss_result        = B_PCA        * knots_coeff_PCA;
-b_PCA_result_1st_deriv    = inv_matrix_PCA_1st_deriv * knots_coeff_PCA_1;
-b_PCA_result_2nd_deriv    = inv_matrix_PCA_2nd_deriv * knots_coeff_PCA_2;
-% --------------------------------------------------------------------------------
-
-
-
-% Remove zeros
-
 
 % --------------------------------------------------------------------------------
 
@@ -181,16 +177,17 @@ b_PCA_result_2nd_deriv    = inv_matrix_PCA_2nd_deriv * knots_coeff_PCA_2;
 % --------------------------------------------------------------------------------
 
 % Remove zeros
-b_spline_result           = max(b_spline_result,0); 
-b_spline_result_1st_deriv = max(b_spline_result_1st_deriv,0);
+if ~RealData_Flag
+    b_PCA_larss_result        = max(b_PCA_larss_result,0);
+    b_PCA_result_1st_deriv    = max(b_PCA_result_1st_deriv,0);
+    b_PCA_result_2nd_deriv    = max(b_PCA_result_2nd_deriv,0);
+    b_spline_result           = max(b_spline_result,0);
+    b_spline_result_1st_deriv = max(b_spline_result_1st_deriv,0);
+end
 b_spline_result_2nd_deriv = max(b_spline_result_2nd_deriv,0);
-b_PCA_larss_result        = max(b_PCA_larss_result,0);
-b_PCA_result_1st_deriv    = max(b_PCA_result_1st_deriv,0);
-b_PCA_result_2nd_deriv    = max(b_PCA_result_2nd_deriv,0);
-
 
 %% Create L curve
-if (plot_L_curve)
+if (plot_L_curve )
     
     %lambda_vec_string = '0.000001:0.010:3';
     %lambda_vec_string = '0.3:0.1:200';
@@ -224,10 +221,10 @@ if (plot_L_curve)
         [ knots_coeff_PCA ]          = Regularized_Sol( A_PCA   , Sim_Ct_T_noise, knots0, lambda, normalize, 0 );
         [ knots_coeff_PCA_1 ]        = Regularized_Sol( A_PCA_1 , Sim_Ct_T_noise, knots0, lambda, normalize, 0);
         [ knots_coeff_PCA_2 ]        = Regularized_Sol( A_PCA_2 , Sim_Ct_T_noise, knots0, lambda, normalize, 0);
-
-                
+        
+        
         % Calculate result
-        b_spline_result           = B_mat        * knots_coeff;        
+        b_spline_result           = B_mat        * knots_coeff;
         b_spline_result_1st_deriv = inv_matrix_1st_deriv * knots_coeff_2;
         b_spline_result_2nd_deriv = inv_matrix_2nd_deriv * knots_coeff_3;
         b_PCA_result              = B_PCA        * knots_coeff_PCA;
@@ -344,7 +341,7 @@ if (plot_L_curve)
     [value idx ]    = min(abs(Lx_norm_4 - curvature_y_val));
     needed_lambda   = lambda_vec(idx);
     % L5
-    curvature_y_val = 170.1;   
+    curvature_y_val = 170.1;
     [value idx ]    = min(abs(Lx_norm_5 - curvature_y_val));
     needed_lambda   = lambda_vec(idx);
     % L6
@@ -352,11 +349,25 @@ if (plot_L_curve)
     [value idx ]    = min(abs(Lx_norm_6 - curvature_y_val));
     needed_lambda   = lambda_vec(idx);
     % L7
-    curvature_y_val = 217.6; 
+    curvature_y_val = 217.6;
     [value idx ]    = min(abs(Lx_norm_7 - curvature_y_val));
     needed_lambda   = lambda_vec(idx);
-   
+    
 end
+
+% Assign return values
+if RealData_Flag
+    ridge_regression_result    = NaN;
+    b_spline_result            = NaN;
+    b_spline_result_1st_deriv  = NaN; 
+    %b_spline_result_2nd_deriv  = NaN; 
+    b_PCA_larss_result         = NaN;
+    b_PCA_result_1st_deriv     = NaN; 
+    b_PCA_result_2nd_deriv     = NaN; 
+    %idx_fig                    = NaN;
+end
+
+
 
 end
 

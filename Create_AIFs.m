@@ -22,13 +22,21 @@ beta                     = Sim_Struct.beta;
 s                        = Sim_Struct.s;
 tau                      = Sim_Struct.tau;
 additional_AIF_delay_min = Sim_Struct.additional_AIF_delay_min;
+AIF_delay_low            = Sim_Struct.AIF_delay_low;
+AIF_delay_max            = Sim_Struct.AIF_delay_max;
 num_iterations           = Sim_Struct.num_iterations;
 num_averages             = Sim_Struct.num_averages;
 r_factor                 = Sim_Struct.r_factor;
 SNR_ratio                = Sim_Struct.SNR_ratio;
 
+if (Sim_Struct.Add_Randomly_AIF_Delay)
+    Sim_Struct.additional_AIF_delay_sec = AIF_delay_low  + (AIF_delay_max  - AIF_delay_low)  * rand(1, num_iterations);
+    Sim_Struct.additional_AIF_delay_min = Sim_Struct.additional_AIF_delay_sec / 60;
+    additional_AIF_delay_min            = Sim_Struct.additional_AIF_delay_min;
+end
+
 % Initiate  vectors
-Sim_Struct.Upsamp_factor            = round( min_interval / High_res_min );
+Sim_Struct.Upsamp_factor = round( min_interval / High_res_min );
 Sim_AIF                  = zeros(num_time_points,num_iterations);
 Sim_AIF_delayed          = zeros(num_time_points,num_iterations);
 

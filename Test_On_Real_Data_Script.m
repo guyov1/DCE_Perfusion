@@ -11,43 +11,7 @@ dbstop(current_break_points);
 % Add current directory and all it's subdirectories to Matlab's path
 addpath(genpath('./'));
 
-% Force running even though file exists
-FORCE = true;
-
-% Enable parallel processing
-% try
-%     
-%     num_processes = getenv('NUMBER_OF_PROCESSORS');
-%     % Maximum allowed processes are 12 in matlab 2012
-%     if (num_processes > 12)
-%         num_processes = 12;
-%     end
-%     
-%     myCluster = parcluster('local');
-%     myCluster = parcluster('MJSProfile1');
-%     myCluster.NumWorkers = num_processes; % 'Modified' property now TRUE
-%     saveProfile(myCluster);   % 'local' profile now updated,
-%     
-%     fprintf('\n');
-%     display('-I- Initiating matlab pool for parallel processing...');
-%     fprintf('\n');
-%     matlabpool;
-%     fprintf('\n');
-%     display('-I- Finished matlab pool initiation.');
-%     fprintf('\n');
-% catch error
-%     fprintf('\n');
-%     fprintf('\n');
-%     display('-I- Matlab pool already running!');
-%     fprintf('\n');
-% end
-
-myPool  = gcp;
-myFiles = {'Summarize_Iteration.m', 'Estimate_ht_Wiener.m', 'Simulation.m', 'Print2Pdf.m', 'gprint.m','AddToLog.m'};
-addAttachedFiles(myPool, myFiles);
-
-
-Verbosity = 'Normal';
+Verbosity = 'None';
 
 % Initiate simulation struct
 Sim_Struct = struct;
@@ -55,92 +19,46 @@ Sim_Struct = struct;
 % Set simulation parameters
 Sim_Struct = Simulation_Set_Params(Sim_Struct, Verbosity);
 
-% In data paths
+% Override the real data flag
+Sim_Struct.RealData_Flag = true;
 
-%Subject_name          = 'KUDISH_IRITH';
+% Set parallel processing if needed
+Set_Parallel_Processing(Sim_Struct, Verbosity);
 
-%Output_directory      = './Run_Output/';
-%Subject_name          = 'SmVl';
-% WM_mask_absolute_path = '\\fmri-t9\users\guyn\DCE_OUT\Guy_Test_1\SmVl_20120930\DCE4D_WM_Mask.nii';
-% %After_CTC_mat         = '\\fmri-t9\users\Moran\DCE\TABASCO\KUDISH_IRITH\Study20131023_124549\DCE\dceout\KuIr_20131023\AfterCTC.mat';
-% %AIFFindData_mat       = '\\fmri-t9\users\Moran\DCE\TABASCO\KUDISH_IRITH\Study20131023_124549\DCE\dceout\KuIr_20131023\AIFFindData.mat';
-% After_CTC_mat         = 'D:\users\guyn\DCE_OUT\Guy_Test_1\SmVl_20120930\AfterCTC.mat';
-% AIFFindData_mat       = 'D:\users\guyn\DCE_OUT\Guy_Test_1\SmVl_20120930\AIFFindData.mat';
-% %Art_Mask              = '\\fmri-t9\users\Moran\DCE\TABASCO\KUDISH_IRITH\Study20131023_124549\DCE\ICAmasks\ARTcomponent.nii';
-% %Vein_Mask             = '\\fmri-t9\users\Moran\DCE\TABASCO\KUDISH_IRITH\Study20131023_124549\DCE\ICAmasks\VEINScomponent.nii';
-% Art_Mask              = '\\fmri-guy2\Dropbox\University\Msc\Thesis\SourceForge\DCE Data 2 sec\SMOLIAR_VLADIMIR\ICAmasks\ARTcomponent.nii';
-% Vein_Mask             = '\\fmri-guy2\Dropbox\University\Msc\Thesis\SourceForge\DCE Data 2 sec\SMOLIAR_VLADIMIR\ICAmasks\VEINScomponent.nii';
+% Read input MRI data
+[Subject_name, Subject_Path, WM_mask_absolute_path, Art_Mask, After_CTC_mat, DCECoregP] = ReadRealData();
 
-% Subject_name          = 'MiAl';
-% Subject_Path          = '\\fmri-t9\users\Moran\lesionVasClassification\GB\11RINDNER_GRETA_AUDREY\BL\';
-% WM_mask_absolute_path = [Subject_Path 'prepfiles\wmref.nii'];
-% Art_Mask              = [Subject_Path  'RiAu_20090518\manualArt.nii'];
-% After_CTC_mat         = [Subject_Path  'RiAu_20090518\AfterCTC.mat'];
-
-% Subject_name          = 'RoAs';
-% Subject_Path          = '\\fmri-t9\users\Moran\lesionVasClassification\GB\01Rodity_Asaf\BL\';
-% WM_mask_absolute_path = [Subject_Path 'prepfiles\wmref.nii'];
-% Art_Mask              = [Subject_Path  'RoAs_20080122\manualArt.nii'];
-% After_CTC_mat         = [Subject_Path  'RoAs_20080122\AfterCTC.mat'];
-
-% Subject_name          = 'ZiYa';
-% Subject_Path          = '\\FMRI-GUY2\Data\2 Sec\GlioBastoma\ZIFROT_YAAKOV\';
-% WM_mask_absolute_path = [Subject_Path 'DCE\HTR\ZiYa_20130804\RefAuto_Base_WM_830.nii'];
-% Art_Mask              = [Subject_Path  'ICAmasks\ARTcomponent.nii'];
-% After_CTC_mat         = [Subject_Path  'DCE\HTR\ZiYa_20130804\AfterCTC.mat'];
-
-% Subject_name          = 'ZiYa';
-% Subject_Path          = '\\FMRI-GUY2\Data\2 Sec\GlioBastoma\ZIFROT_YAAKOV\';
-% WM_mask_absolute_path = [Subject_Path 'DCE\STD\ZiYa_20130804\RefAuto_Base_WM_830.nii'];
-% Art_Mask              = [Subject_Path  'ICAmasks\ARTcomponent.nii'];
-% After_CTC_mat         = [Subject_Path  'DCE\STD\ZiYa_20130804\AfterCTC.mat'];
-
-% Subject_name          = 'BaTa';
-% Subject_Path          = '\\FMRI-GUY2\Data\2 Sec\Healthy + DSC\BARAK_TAL\';
-% WM_mask_absolute_path = [Subject_Path 'DCE_out\BaTa_20131003x\RefAuto1_WM_830.nii'];
-% Art_Mask              = [Subject_Path  'ICAmasks\ARTcomponent.nii'];
-% After_CTC_mat         = [Subject_Path  'DCE_out\BaTa_20131003x\AfterCTC.mat'];
-
-% Subject_name          = 'OrZe';
-% Subject_Path          = '\\FMRI-GUY2\Data\2 Sec\Healthy\OR_DANA_ZEHAVA\';
-% WM_mask_absolute_path = [Subject_Path 'DCE_out\OrZe_20130811\RefAuto1_WM_830.nii'];
-% Art_Mask              = [Subject_Path  'ICAmasks\ARTcomponent.nii'];
-% After_CTC_mat         = [Subject_Path  'DCE_out\OrZe_20130811\AfterCTC.mat'];
-
-Subject_name          = 'CoRa';
-Subject_Path          = '\\fmri-t9\users\Moran\Reports_for_deebi\019_COHEN_ZEDEK_RAHEL\Study20140402_100834_T1\';
-WM_mask_absolute_path = [Subject_Path  'DCE\CoRa_20140402\RefAuto1_WM_830.nii'];
-Art_Mask              = [Subject_Path  'DCE\ICA_masks\ARTcomponent.nii'];
-After_CTC_mat         = [Subject_Path  'DCE\CoRa_20140402\AfterCTC.mat'];
-
-% Subject_name          = 'SmVl';
-% Subject_Path          = '\\fmri-guy2\Data\2 Sec\GlioBastoma\SMOLIAR_VLADIMIR\';
-% WM_mask_absolute_path = [Subject_Path 'DCE_GILAD_SmVl_20120930\RefAuto1_WM_830.nii'];
-% Art_Mask              = [Subject_Path  'ICAmasks\ARTcomponent.nii'];
-% After_CTC_mat         = [Subject_Path  'DCE_GILAD_SmVl_20120930\AfterCTC.mat'];
-
+% Create output directory
+mkdir([Subject_Path filesep 'Perfusion_DCE\']);
+PefusionOutput        = [Subject_Path filesep 'Perfusion_DCE\'];
+% Set output directory for figures/report
+Output_directory      =  [PefusionOutput 'Run_Output/'];
 
 % Add the needed data from the DCE run
 display('-I- Loading .mat files from DCE run...');
 
 if(exist(After_CTC_mat,'file'))
-    load(After_CTC_mat);   
+    load(After_CTC_mat);
+else
+    error('-E- AfterCTC.mat does not exist...');
 end
 
-
-% Create output directory
-mkdir([Subject_Path 'Perfusion_DCE\']);
-PefusionOutput        = [Subject_Path 'Perfusion_DCE\'];
-% Set output directory for figures/report
-Output_directory      =  [PefusionOutput 'Run_Output/'];
-
-
 % Define needed parameters from DCE data
-nSVols                = size(CTC2D,2);
-num_pixels            = size(CTC2D,1);
-sec_interval          = TimeBetweenDCEVolsFinal;
-TimeBetweenDCEVolsMin = TimeBetweenDCEVolsFinal/60;
-HSampleTs             = TimeBetweenDCEVolsMin*(0:nSVols-1);
+Sim_Struct.num_time_stamps  = size(CTC2D,2);
+Sim_Struct.num_voxels       = size(CTC2D,1);
+Sim_Struct.sec_interval     = TimeBetweenDCEVolsFinal;
+Sim_Struct.min_interval     = Sim_Struct.sec_interval / 60;
+time_vec_minutes            = Sim_Struct.min_interval * ( 0 : Sim_Struct.num_time_stamps - 1 );
+Sim_Struct.time_vec_minutes = time_vec_minutes;
+ 
+
+
+%TimeBetweenDCEVolsMin   = TimeBetweenDCEVolsFinal/60;
+%HSampleTs               = TimeBetweenDCEVolsMin*(0:nSVols-1);
+%time_vec_seconds   = (1:nSVols).* sec_interval;
+%time_vec_minutes   = time_vec_seconds / 60;
+%nSVols                      = size(CTC2D,2);
+%num_pixels                  = size(CTC2D,1);
 
 %% Create AIF
 
@@ -148,9 +66,9 @@ if exist('AIFFindData_mat','var')
     load(AIFFindData_mat);
     
     % AIF_Parker8t=@(x,t) AIF_Parkerg2( t,1,x(3),x(1),x(5),x(6),x(1)+x(4),x(7),x(8))*x(2);
-    AIF_Parker9t    =@(x,t)AIF_Parkerg3( t,1,x(3),x(1),x(5),x(6),x(1)+x(4),x(7),x(8),x(9),max(HSampleTs))*x(2);
+    AIF_Parker9t    =@(x,t)AIF_Parkerg3( t,1,x(3),x(1),x(5),x(6),x(1)+x(4),x(7),x(8),x(9),max(Sim_Struct.time_vec_minutes))*x(2);
     % Create Parker's AIF
-AIF_paramtertic =AIF_Parker9t(OutAIFParam,HSampleTs);
+    AIF_paramtertic =AIF_Parker9t(OutAIFParam,Sim_Struct.time_vec_minutes);
 end
 
 
@@ -168,9 +86,8 @@ if exist('Vein_Mask','var')
 end
 
 % Plot Arteris/veins Ct's and their averages
-fig_num = figure;
-time_vec_seconds   = (1:nSVols).* sec_interval;
-time_vec_minutes   = time_vec_seconds / 60;
+fig_num            = figure;
+
 subplot(1,2,1);
 if exist('AIFFindData_mat','var')
     plot(time_vec_minutes,AIF_paramtertic,time_vec_minutes,AIF_paramtertic,'*');
@@ -186,7 +103,6 @@ if exist('Vein_Mask','var')
     plot(time_vec_minutes,transpose(CTC2D(ICA_Vein2D_indices,:)),'g');
     h2 = plot(time_vec_minutes,mean(transpose(CTC2D(ICA_Vein2D_indices,:)),2),'r','LineWidth',4);
 end
-
 
 title('Arteris/Veins Cts and their averages');
 xlabel('Time [Min]');
@@ -237,9 +153,12 @@ num_total_voxels = size(Ct,1);
 Chosen_AIF = AIF_estimated_ICA;
 %Chosen_AIF = transpose(smooth(AIF_estimated_ICA));
 
+% Scale AIF as necessary
+Chosen_AIF = Sim_Struct.AIF_Scaling_Factor * Chosen_AIF;
+
 [ Flow_Larsson, Delay_sec_Larsson, t_delay_seconds, Delay_BiExp_Fit_seconds, sigma_seconds, amplitude, Est_ht, calculated_gaussian, conv_result_ht, conv_result_gaussian, RMS_ht, RMS_gauss, RMS_params,...
-    calculated_double_gaussian, conv_result_double_gaussian, double_gauss_params, RMS_double_gauss, RMS_params_double_gauss, Ki, Vb, Ve, MTT, Ki_Patlak_vec, Vb_Patlak_vec, MTT_Patlak_vec ] = ...
-    Get_Ht_Deconvolving(Sim_Struct, Chosen_AIF, Ct , sec_interval, Output_directory, Subject_name, FORCE);
+    calculated_double_gaussian, conv_result_double_gaussian, double_gauss_params, RMS_double_gauss, RMS_params_double_gauss, Ktrans, Vb, Ve, MTT, Ktrans_Patlak_vec, Vb_Patlak_vec, MTT_Patlak_vec ] = ...
+    Get_Ht_Deconvolving(Sim_Struct, Chosen_AIF, Ct , Output_directory, Subject_name, Sim_Struct.Force_RealData_Calc, Verbosity);
 
 %% Debugging results
 
@@ -309,11 +228,11 @@ Mat_File_To_Save = [PefusionOutput 'Run_Output/' 'All_Parameters_Result.mat'];
 
 save(Mat_File_To_Save,'Flow_Larsson','Delay_sec_Larsson'...
     ,'t_delay_seconds','Delay_BiExp_Fit_seconds','sigma_seconds','amplitude','Est_ht','conv_result_ht', 'conv_result_gaussian','RMS_ht'...
-    ,'RMS_gauss','RMS_params','double_gauss_params','RMS_double_gauss','RMS_params_double_gauss','Ki', 'Vb', 'Ve', 'MTT', 'Ki_Patlak_vec', 'Vb_Patlak_vec', 'MTT_Patlak_vec' ,'Msk2'...
-    ,'WorkingP','PefusionOutput','num_total_voxels','time_vec_minutes','TimeBetweenDCEVolsMin','time_vec_minutes');
+    ,'RMS_gauss','RMS_params','double_gauss_params','RMS_double_gauss','RMS_params_double_gauss','Ktrans', 'Vb', 'Ve', 'MTT', 'Ktrans_Patlak_vec', 'Vb_Patlak_vec', 'MTT_Patlak_vec' ,'Msk2'...
+    ,'WorkingP','PefusionOutput','num_total_voxels','time_vec_minutes','TimeBetweenDCEVolsFinal','time_vec_minutes');
 %load(Mat_File_To_Save);
 
-% Write only in case we used the entire brain (say, beyond 1000 voxels)
+% Write only in case we used the entire brain (say, above 1000 voxels)
 if (num_total_voxels > 1000)
     
     % Reshape 2D to 3D and 4D
@@ -347,12 +266,12 @@ if (num_total_voxels > 1000)
     amplitude_2_double_gauss_seconds_3D  = Reshape2DCto4D(double_gauss_params(6,:),Msk2);
     RMS_double_gauss_3D                  = Reshape2DCto4D(RMS_double_gauss,Msk2);
     RMS_params_double_gauss_3D           = Reshape2DCto4D(RMS_params_double_gauss,Msk2);
-    Ki_3D                                = Reshape2DCto4D(Ki,Msk2);
+    Ktrans_3D                                = Reshape2DCto4D(Ktrans,Msk2);
     Vb_3D                                = Reshape2DCto4D(Vb,Msk2);
     Ve_3D                                = Reshape2DCto4D(Ve,Msk2);
     MTT_3D                               = Reshape2DCto4D(MTT,Msk2);
     MTT_Patlak_3D                        = Reshape2DCto4D(MTT_Patlak_vec,Msk2);
-    Ki_Patlak_3D                         = Reshape2DCto4D(Ki_Patlak_vec,Msk2);
+    Ktrans_Patlak_3D                         = Reshape2DCto4D(Ktrans_Patlak_vec,Msk2);
     Vb_Patlak_3D                         = Reshape2DCto4D(Vb_Patlak_vec,Msk2);
     
     % Title for PDF before displaying images
@@ -369,7 +288,7 @@ if (num_total_voxels > 1000)
     gprint(fig_num,[PefusionOutput 'Run_Output/' 'Time_Delay_Gaussian.png']);
     %gprint(fig_num,'Run_Output/Time_Delay_Gaussian.png');
     AddToLog([PefusionOutput 'Run_Output\'],'idx_006','TimeDelayGaussian','Time_Delay_Gaussian.png');
-                
+    
     fig_num = figure;
     subplot(1,2,1);
     imagesc(mritransform(sigma_seconds_3D(:,:,2)));colorbar;
@@ -426,11 +345,10 @@ if (num_total_voxels > 1000)
     %gprint(fig_num,'Run_Output/Delay_Larsson.png');
     AddToLog([PefusionOutput 'Run_Output\'],'idx_011','DelayLarsson','Delay_Larsson.png');
     
-    %DCECoregP = [WorkingP 'DCEMainCoreged' filesep];
-    DCECoregP = [Subject_Path 'DCE_out' filesep 'OrZe_20130811' filesep];
-    DCEMNiiP  = DCECoregP;
-    DDCE      = dir([DCEMNiiP '*.nii']);
-    DCEFNs    = strcat(DCEMNiiP,{DDCE.name})';
+    
+    DDCE      = dir([DCECoregP '*.nii']);
+    % HDR File
+    DCEFNs    = strcat(DCECoregP,{DDCE.name})';
     
     MeanFN=[PefusionOutput 'FlowExtract_Time_Delay.nii'];
     Raw2Nii(t_delay_seconds_3D,MeanFN,'float32',DCEFNs{1});
@@ -477,8 +395,8 @@ if (num_total_voxels > 1000)
     MeanFN=[PefusionOutput 'FlowExtract_RMS_Ht_with_Fitted_Double_Gaussian.nii'];
     Raw2Nii(RMS_params_double_gauss_3D,MeanFN,'float32',DCEFNs{1});
     
-    MeanFN=[PefusionOutput 'FlowExtract_Ki.nii'];
-    Raw2Nii(Ki_3D,MeanFN,'float32',DCEFNs{1});
+    MeanFN=[PefusionOutput 'FlowExtract_Ktrans.nii'];
+    Raw2Nii(Ktrans_3D,MeanFN,'float32',DCEFNs{1});
     
     MeanFN=[PefusionOutput 'FlowExtract_Vb.nii'];
     Raw2Nii(Vb_3D,MeanFN,'float32',DCEFNs{1});
@@ -492,8 +410,8 @@ if (num_total_voxels > 1000)
     MeanFN=[PefusionOutput 'FlowExtract_MTT_Patlak.nii'];
     Raw2Nii(MTT_Patlak_3D,MeanFN,'float32',DCEFNs{1});
     
-    MeanFN=[PefusionOutput 'FlowExtract_Ki_Patlak.nii'];
-    Raw2Nii(Ki_Patlak_3D,MeanFN,'float32',DCEFNs{1});
+    MeanFN=[PefusionOutput 'FlowExtract_Ktrans_Patlak.nii'];
+    Raw2Nii(Ktrans_Patlak_3D,MeanFN,'float32',DCEFNs{1});
     
     MeanFN=[PefusionOutput 'FlowExtract_Vb_Patlak.nii'];
     Raw2Nii(Vb_Patlak_3D,MeanFN,'float32',DCEFNs{1});
@@ -537,24 +455,24 @@ if ( exist(WM_mask_absolute_path,'file') )
     
     % DEBUG
     Flow_Larsson_3D = loadniidata([PefusionOutput 'FlowExtract_Flow_Larsson.nii']);
-    Ki_3D           = loadniidata([PefusionOutput 'FlowExtract_Ki.nii']);
+    Ktrans_3D           = loadniidata([PefusionOutput 'FlowExtract_Ktrans.nii']);
     
     if exist([WorkingP 'ManualArtNoBAT3\'],'dir')
         Ktrans_3D       = loadniidata([WorkingP 'ManualArtNoBAT3\KtransFinalN.nii']);
     else % Auto art
         Ktrans_3D       = loadniidata([WorkingP 'AutoArtBAT\KtransFinalN.nii']);
     end
-        
+    
     
     % According to Larsson. WM Flow should be 30.6 [mL/100mL]
     [ Normalized_F_Map ] = Normalize_Output_Maps( Flow_Larsson_3D, WM_mask_3D , 30.6);
-    % According to Larsson. WM Ki should be 0.84 [mL/100mL/min]
-    [ Normalized_Ki_Map ] = Normalize_Output_Maps( Ki_3D, WM_mask_3D , 0.84);
+    % According to Larsson. WM Ktrans should be 0.84 [mL/100mL/min]
+    [ Normalized_Ktrans_Map ] = Normalize_Output_Maps( Ktrans_3D, WM_mask_3D , 0.84);
     
     MeanFN = [PefusionOutput 'FlowExtract_Flow_Larsson_Relative_WM_30_6.nii'];
     Raw2Nii(Normalized_F_Map,MeanFN,'float32',DCEFNs{1});
-    MeanFN = [PefusionOutput 'FlowExtract_Ki_Relative_WM_0_84.nii'];
-    Raw2Nii(Ki_3D,MeanFN,'float32',DCEFNs{1});
+    MeanFN = [PefusionOutput 'FlowExtract_Ktrans_Relative_WM_0_84.nii'];
+    Raw2Nii(Ktrans_3D,MeanFN,'float32',DCEFNs{1});
     
     % 0-1 maps
     max_val = 0.026768 * 242.9221;
@@ -563,13 +481,13 @@ if ( exist(WM_mask_absolute_path,'file') )
     Flow_Larsson_3D_Thresholded(Flow_Larsson_3D_Thresholded > max_val) = max_val;
     Flow_Larsson_3D_Norm_0_1 = Flow_Larsson_3D_Thresholded ./ max(max(max(Flow_Larsson_3D_Thresholded)));
     
-    Ki_3D_Norm_0_1           = Ki_3D ./ max(max(max(Ki_3D)));
+    Ktrans_3D_Norm_0_1           = Ktrans_3D ./ max(max(max(Ktrans_3D)));
     Ktrans_3D_Norm_0_1       = Ktrans_3D ./ max(max(max(Ktrans_3D)));
     
     MeanFN = [PefusionOutput 'FlowExtract_Flow_Larsson_Normalized_0_1.nii'];
     Raw2Nii(Flow_Larsson_3D_Norm_0_1,MeanFN,'float32',DCEFNs{1});
-    MeanFN = [PefusionOutput 'FlowExtract_Ki_Larsson_Normalized_0_1.nii'];
-    Raw2Nii(Ki_3D_Norm_0_1,MeanFN,'float32',DCEFNs{1});
+    MeanFN = [PefusionOutput 'FlowExtract_Ktrans_Larsson_Normalized_0_1.nii'];
+    Raw2Nii(Ktrans_3D_Norm_0_1,MeanFN,'float32',DCEFNs{1});
     MeanFN = [PefusionOutput 'FlowExtract_Ktrans_Tofts_Normalized_0_1.nii'];
     Raw2Nii(Ktrans_3D_Norm_0_1,MeanFN,'float32',DCEFNs{1});
     

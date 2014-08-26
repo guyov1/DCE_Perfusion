@@ -1,4 +1,4 @@
-function [ est_delay_by_AIF_correct, Sim_AIF_with_noise_Regul_shifted, Final_Filter_Estimation_Larss, idx_fig ] = AIF_Delay_Correct( Sim_Struct, ht_Struct, Verbosity, iter_num, avg_num, idx_fig)
+function [ est_delay_by_AIF_correct, Sim_AIF_with_noise_Regul_shifted, Final_Filter_Estimation_Larss, idx_fig ] = AIF_Delay_Correct( Sim_Struct, ht_Struct, Final_Filter_Estimation_Larss, Sim_Ct_larss_Regul_noise,Verbosity, iter_num, avg_num, idx_fig)
 
 % Take from struct variables used in local function
 normalize                       = Sim_Struct.normalize;
@@ -8,9 +8,10 @@ plot_L_Curve                    = Sim_Struct.plot_L_Curve;
 Derivative_Time_Devision        = Sim_Struct.Derivative_Time_Devision;
 lambda_vec_larss                = Sim_Struct.lambda_vec_larss;
 min_interval                    = Sim_Struct.min_interval(iter_num);
-time_vec_minutes                = Sim_Struct.time_vec_minutes;
+time_vec_minutes                = double(Sim_Struct.time_vec_minutes);
 Upsampling_resolution           = Sim_Struct.Upsampling_resolution;
 Max_Time_Delay                  = Sim_Struct.Max_Time_Delay;
+Min_Time_Delay                  = Sim_Struct.Min_Time_Delay;
 Use_Upsampling_Delay_Comp       = Sim_Struct.Use_Upsampling_Delay_Comp;
 LowerBound_Larsson              = Sim_Struct.LowerBound_Larsson;
 UpperBound_Larsson              = Sim_Struct.UpperBound_Larsson;
@@ -21,14 +22,18 @@ RMS_Smooth                      = Sim_Struct.RMS_Smooth;
 Diff_From_Bolus                 = Sim_Struct.Diff_From_Bolus;
 additional_AIF_delay_sec        = Sim_Struct.additional_AIF_delay_sec(iter_num);
 BiExp2CTC_RMS_Ratio             = Sim_Struct.BiExp2CTC_RMS_Ratio;
-plot_flag                       = Sim_Struct.plot_flag; 
+plot_flag                       = Sim_Struct.plot_flag;
 adjusted_larsson                = Sim_Struct.Adjusted_Larsson_Model;
 Filter_Est_Chosen               = Sim_Struct.Filter_Est_Chosen;
+RealData_Flag                   = Sim_Struct.RealData_Flag;
+Simple_AIF_Delay_Correct        = Sim_Struct.Simple_AIF_Delay_Correct;
+init_Ve_guess                   = Sim_Struct.init_Ve_guess;
+FMS_Algorithm                   = Sim_Struct.FMS_Algorithm;
 
-Final_Filter_Estimation_Larss   = ht_Struct.Final_Filter_Estimation_Larss;
+%Final_Filter_Estimation_Larss   = ht_Struct.Final_Filter_Estimation_Larss;
+%Sim_Ct_larss_Regul_noise        = ht_Struct.Sim_Ct_larss_Regul_noise;
 Sim_AIF_with_noise_Regul        = ht_Struct.Sim_AIF_with_noise_Regul;
 Sim_Ct_larss_Regul              = ht_Struct.Sim_Ct_larss_Regul;
-Sim_Ct_larss_Regul_noise        = ht_Struct.Sim_Ct_larss_Regul_noise;
 Conv_X_no_noise                 = ht_Struct.Conv_X_no_noise;
 
 % ---------------------------------------------------------------------
@@ -36,7 +41,7 @@ Conv_X_no_noise                 = ht_Struct.Conv_X_no_noise;
 % ---------------------------------------------------------------------
 est_simple_delay       = NaN; % Initiate with NaN
 
-if Sim_Struct.Simple_AIF_Delay_Correct
+if Simple_AIF_Delay_Correct
     
     [~, max_idx] = max(Final_Filter_Estimation_Larss);
     
@@ -60,12 +65,18 @@ if Sim_Struct.Simple_AIF_Delay_Correct
             % Create new convolution matrix for
             [ Conv_X_shifted ] = Convolution_Matrix( min_interval, Sim_AIF_with_noise_Regul_shifted );
             
+            if RealData_Flag
+                [ ~, ~, ~, Final_Filter_Estimation_Larss, ~, ~, ~, idx_fig ] =  ...
+                    Regularization_Methods_Simulation( Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise, Conv_Matrix, Conv_Matrix_no_noise, time_vec_minutes, lambda_vec_larss, normalize, min_interval, B_mat, B_PCA, plot_L_Curve, idx_fig, filter_type, Derivative_Time_Devision, plot_flag, RealData_Flag );
+            else
+                
+                [ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig]...
+                    = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise,Conv_X_shifted,Conv_X_no_noise,time_vec_minutes,...
+                    lambda_vec_larss, normalize, min_interval, B_mat, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag, RealData_Flag );
+                
+                [ Final_Filter_Estimation_Larss ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
+            end
             
-            [ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig]...
-                = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise,Conv_X_shifted,Conv_X_no_noise,time_vec_minutes,...
-                lambda_vec_larss, normalize, min_interval, B_mat, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, plot_flag );
-           
-            [ Final_Filter_Estimation_Larss ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
             
         end
     else
@@ -95,12 +106,12 @@ else
     
     
     % Upsmaple -> shift -> Downsample
-    UpSampFactor                     = round(min_interval / Upsampling_resolution) ;
+    UpSampFactor                     = double(round(min_interval / Upsampling_resolution)) ;
     Sim_AIF_with_noise_Regul_up_samp = interp(Sim_AIF_with_noise_Regul,UpSampFactor);
     
     % Shift the up sampled AIF in wanted times
     time_res_sec     = Upsampling_resolution * 60;
-    shift_times      = ( (-Max_Time_Delay:time_res_sec:Max_Time_Delay) / 60);
+    shift_times      = ( (Min_Time_Delay:time_res_sec:Max_Time_Delay) / 60);
     shift_indices    = round(shift_times/Upsampling_resolution);
     num_shifts       = length(shift_times);
     
@@ -156,79 +167,98 @@ else
             
             %%
             B_mat_modified                    = B_mat;
-            Sim_Ct_larss_Regul_modified       = Sim_Ct_larss_Regul;
             Conv_X_shift_modified             = Conv_X_shift;
             time_vec_minutes_modified         = time_vec_minutes;
             Sim_Ct_larss_Regul_noise_modified = Sim_Ct_larss_Regul_noise;
             
-        
-            % Deconvolution by regularization for larsson's filter
-            [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
-                = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_modified,Conv_X_shift_modified,Conv_X_no_noise,time_vec_minutes_modified,...
-                lambda_vec_larss, normalize, min_interval, B_mat_modified, B_PCA, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0 );
             
-            [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, Sim_Struct.est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
-
-            %% Estimate Patlak parameters for initial guess
-            AIF                   = Sim_AIF_with_noise_Regul_shifted;
-            Y_vec_Vb              = Sim_Ct_larss_Regul ./ AIF;                        %[mL/100g]
-            X_vec                 = cumtrapz(time_vec_minutes,AIF) ./ AIF; %[min]
-            [~, bolus_idx]        = max(abs(diff(AIF)));
-            base_value            = mean(AIF(1:max(bolus_idx-1,1)));
-            mult_val_Thresh       = 3;
-            Threshold             = mult_val_Thresh*base_value;
-            stable_idx            = find(AIF > Threshold);
-            % If threshold was too big, decrease it till we get some value
-            while (isempty(stable_idx)|| length(stable_idx)<2)
-                mult_val_Thresh       = mult_val_Thresh/1.5;
-                Threshold             = mult_val_Thresh*base_value;
-                stable_idx            = find(AIF > Threshold);
+            if RealData_Flag
+                [ ~, ~, ~, Spline_est(:,i), ~, ~, ~, idx_fig ] =  ...
+                    Regularization_Methods_Simulation( Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_modified, Conv_X_shift_modified, Conv_X_no_noise, time_vec_minutes_modified...
+                    , lambda_vec_larss, normalize, min_interval, B_mat_modified, B_PCA, plot_L_Curve, idx_fig, 'Larss', Derivative_Time_Devision, 0, RealData_Flag );
+            else
+                
+                % Deconvolution by regularization for larsson's filter
+                [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
+                    = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_modified,Conv_X_shift_modified,Conv_X_no_noise,time_vec_minutes_modified,...
+                    lambda_vec_larss, normalize, min_interval, B_mat_modified, B_PCA, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0, RealData_Flag);
+                
+                [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, Sim_Struct.est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
             end
-            % Take the stable points out of the vector
-            X_vec                 = X_vec(stable_idx);
-            Y_vec_Vb              = Y_vec_Vb(stable_idx);
-            % Remove Zeros/NaNs/Infs caused because of division by 0
-            nan_indices           = find(isnan(Y_vec_Vb));
-            inf_indices           = find(~isfinite(Y_vec_Vb));
-            Y_vec_Vb(nan_indices) = [];
-            Y_vec_Vb(inf_indices) = [];
-            X_vec(nan_indices)    = [];
-            X_vec(inf_indices)    = [];
-            % Fine straight line coefficent
-            [linear_params]       = polyfit(X_vec,Y_vec_Vb,1);
-            % Ki,Vb estimation
-            est_Ki_Patlak_noise   = linear_params(1); %a in ax+b
-            est_Vb_Patlak_noise   = linear_params(2); %b in ax+b
+            
+            %% Estimate Patlak parameters for initial guess
+            est_F_noise         = max(Spline_est(:,i));
+            if est_F_noise<=0
+                % Something is wrong with data. Return the input and stop iterating
+                est_delay_by_AIF_correct         = 0;
+                Sim_AIF_with_noise_Regul_shifted = Sim_AIF_with_noise_Regul;
+                %Final_Filter_Estimation_Larss
+                return;
+            else
+                [est_Ktrans_Patlak_noise, est_Vb_Patlak_noise ,est_E_Patlak_noise, est_MTT_Patlak_noise, idx_fig] = Patlak_Estimation(Sim_Struct, Sim_AIF_with_noise_Regul_shifted, Sim_Ct_larss_Regul_noise_modified,est_F_noise, Verbosity, iter_num, avg_num, idx_fig);
+            end
             
             %% Non-linear bi-exp fit
             
             % Prepare parameters for bi-exp fit
-            estF                  = max(Spline_est(:,i));
-            E_Patlak_est          = est_Ki_Patlak_noise / estF; % E = Ki / F
-            Init_Guess_Larsson    = double( [est_Vb_Patlak_noise E_Patlak_est 10] );
+            Init_Guess_Larsson    = double( [est_Vb_Patlak_noise est_E_Patlak_noise init_Ve_guess] );
             
             
             if (adjusted_larsson)
-                Larsson_function      = @(x,t) Adjusted_Larsson_Filter( t, estF, x(1), x(2), x(3));
+                Larsson_function      = @(x,t) Adjusted_Larsson_Filter( t, est_F_noise, x(1), x(2), x(3));
             else
-                Larsson_function      = @(x,t) Larsson_Filter( t, estF, x(1), x(2), x(3), Hct(iter_num));
+                Larsson_function      = @(x,t) Larsson_Filter( t, est_F_noise, x(1), x(2), x(3), Hct(iter_num));
             end
             
+            % Try to avid 0's in data to fit (ydata in optimization problem)
+            % tmp          = Spline_est(:,i)/est_F_noise;
+            % min_not_zero = min(tmp(tmp>0));
+            % toFit        = max(Spline_est(:,i)/est_F_noise, min_not_zero);
             
-            % Estimate bi-exp fit to spline result
-            [est_params_Larsson_noise,residue_norm_Larsson_noise,residual_Larsson_noise,exitflag_Larsson_noise,algo_info_Larsson_noise] = ...
-                lsqcurvefit(Larsson_function,Init_Guess_Larsson,time_vec_minutes',Spline_est(:,i)/estF,...
-                LowerBound_Larsson,UpperBound_Larsson,algorithm_options);
+            if strcmp(FMS_Algorithm,'trust-region-reflective')
+                
+                % Estimate bi-exp fit to spline result
+                [est_params_Larsson_noise,residue_norm_Larsson_noise,residual_Larsson_noise,exitflag_Larsson_noise,algo_info_Larsson_noise] = ...
+                    lsqcurvefit(Larsson_function,Init_Guess_Larsson,time_vec_minutes', Spline_est(:,i)/est_F_noise,...
+                    LowerBound_Larsson,UpperBound_Larsson,algorithm_options);
+                
+            elseif strcmp(FMS_Algorithm,'levenberg-marquardt')
+                
+                Unbounded_Larsson_function = @(x,t) Larsson_function(BoundFunc(x,LowerBound_Larsson,UpperBound_Larsson),t);
+                
+                [est_params_Larsson_noise,residue_norm_Larsson_noise,residual_Larsson_noise,exitflag_Larsson_noise,algo_info_Larsson_noise] = ...
+                    lsqcurvefit(Unbounded_Larsson_function,Init_Guess_Larsson,time_vec_minutes',Spline_est(:,i)/est_F_noise,...
+                    [],[],algorithm_options);
+                
+                est_params_Larsson_noise = BoundFunc(est_params_Larsson_noise,LowerBound_Larsson,UpperBound_Larsson);
+                
+            elseif strcmp(FMS_Algorithm,'fminsearch')
+                
+                
+                Unbounded_Larsson_function = @(x,t) Larsson_function(BoundFunc(x,LowerBound_Larsson,UpperBound_Larsson),t);
+                ydata    = Spline_est(:,i)/est_F_noise;
+                RMSCost  = @(vec) sum(vec.^2);
+                CostFunc = @(x) RMSCost( Unbounded_Larsson_function(x,time_vec_minutes') - ydata );
+                best_transformedParams    = fminsearch(CostFunc, Init_Guess_Larsson, Sim_Struct.algorithm_options);
+                est_params_Larsson_noise = BoundFunc(best_transformedParams,LowerBound_Larsson,UpperBound_Larsson);
+                
+                
+                %                 % Estimate bi-exp fit to spline result
+                %                 [est_params_Larsson_noise,residue_norm_Larsson_noise,residual_Larsson_noise,exitflag_Larsson_noise,algo_info_Larsson_noise] = ...
+                %                     lsqcurvefit(Larsson_function,Init_Guess_Larsson,time_vec_minutes',Spline_est(:,i)/est_F_noise,...
+                %                     [],[],algorithm_options);
+                
+            end
             
             %figure;plot(Sim_Ct_larss_Regul_noise,'b');hold on;plot(Result,'r');hold off;
             %figure;plot(b_spline_larss_result_2nd_deriv);title(['Time Shift: ' num2str(shift_times(i)*60) ]);
             
             Rms_errors_BiExp(i)   = residue_norm_Larsson_noise;
             
-             if (adjusted_larsson)
-                exp_fit(:,i)          = Adjusted_Larsson_Filter(time_vec_minutes',estF,est_params_Larsson_noise(1),est_params_Larsson_noise(2),est_params_Larsson_noise(3));
+            if (adjusted_larsson)
+                exp_fit(:,i)          = Adjusted_Larsson_Filter(time_vec_minutes',est_F_noise,est_params_Larsson_noise(1),est_params_Larsson_noise(2),est_params_Larsson_noise(3));
             else
-                exp_fit(:,i)          = Larsson_Filter(time_vec_minutes',estF,est_params_Larsson_noise(1),est_params_Larsson_noise(2),est_params_Larsson_noise(3),Hct(iter_num));
+                exp_fit(:,i)          = Larsson_Filter(time_vec_minutes',est_F_noise,est_params_Larsson_noise(1),est_params_Larsson_noise(2),est_params_Larsson_noise(3),Hct(iter_num));
             end
             
             
@@ -237,7 +267,7 @@ else
             %Result            = Conv_X_shift * b_spline_larss_result_2nd_deriv;
             %Result            = Conv_X * Spline_est(:,i);
             %Result            = Conv_X_shift * Spline_est(:,i);
-            Result            = Conv_X_shift * estF * exp_fit(:,i);
+            Result            = Conv_X_shift * est_F_noise * exp_fit(:,i);
             Est_CTCs(:,i)     = Result;
             
             if RMS_Smooth_Around_Bolus
@@ -278,12 +308,21 @@ else
             %
             B_mat_upsmp = Create_B_matrix(knots,time_vec_minutes_upsmp,poly_deg-1);
             
-            % Deconvolution by regularization for larsson's filter
-            [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
-                = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_upsmp,Conv_X_shift_upsmp,Conv_X_no_noise,time_vec_minutes_upsmp,...
-                lambda_vec_larss, normalize, min_interval, B_mat_upsmp, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0 );
             
-            [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
+            if RealData_Flag
+                [ ~, ~, ~, Spline_est(:,i), ~, ~, ~, idx_fig ] =  ...
+                    Regularization_Methods_Simulation( Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_upsmp, Conv_X_shift_upsmp, Conv_X_no_noise, time_vec_minutes_upsmp...
+                    , lambda_vec_larss, normalize, min_interval, B_mat_upsmp, B_PCA, plot_L_Curve, idx_fig, 'Larss', Derivative_Time_Devision, 0, RealData_Flag );
+            else
+                
+                % Deconvolution by regularization for larsson's filter            % Deconvolution by regularization for larsson's filter
+                [ ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv, idx_fig ]...
+                    = Regularization_Methods_Simulation(Sim_Ct_larss_Regul, Sim_Ct_larss_Regul_noise_upsmp,Conv_X_shift_upsmp,Conv_X_no_noise,time_vec_minutes_upsmp,...
+                    lambda_vec_larss, normalize, min_interval, B_mat_upsmp, B_PCA, plot_L_Curve, idx_fig , 'Larss' , Derivative_Time_Devision, 0 , RealData_Flag);
+                
+                [ Spline_est(:,i) ] = Choose_Needed_Ht( Filter_Est_Chosen, est_larss_filter_Wiener_noise, ridge_regression_result, b_spline_result, b_spline_result_1st_deriv, b_spline_result_2nd_deriv, b_PCA_larss_result, b_PCA_result_1st_deriv, b_PCA_result_2nd_deriv);
+                
+            end
             
             
             % Check min RMS for possible time shifts to determine if one exists
@@ -429,16 +468,16 @@ if (plot_flag)
     % subplot(3,1,3);
     % title('Bi-Exp fit - Original h(t) vs. Estimated');
     
-%     % Printing image to PDF
-%     gprint(fig_num,'Run_Output/Time_Shift_Estimation.png');
-%     
-%     idx_fig    = idx_fig + 1;
-%     idx_string = ['idx_' num2str(idx_fig,'%03i')];
-%     AddToLog('Run_Output/',idx_string,'\\subsection*{\\underline{AIF Delay Estimation}}');
-%     idx_fig    = idx_fig + 1;
-%     idx_string = ['idx_' num2str(idx_fig,'%03i')];
-%     AddToLog('Run_Output/',idx_string,'AIFDelayEst','Time_Shift_Estimation.png');
-%     
+    %     % Printing image to PDF
+    %     gprint(fig_num,'Run_Output/Time_Shift_Estimation.png');
+    %
+    %     idx_fig    = idx_fig + 1;
+    %     idx_string = ['idx_' num2str(idx_fig,'%03i')];
+    %     AddToLog('Run_Output/',idx_string,'\\subsection*{\\underline{AIF Delay Estimation}}');
+    %     idx_fig    = idx_fig + 1;
+    %     idx_string = ['idx_' num2str(idx_fig,'%03i')];
+    %     AddToLog('Run_Output/',idx_string,'AIFDelayEst','Time_Shift_Estimation.png');
+    %
     % Print result to PDF
     [Sim_Struct.idx_fig] = Print2Pdf(fig_num, Sim_Struct.idx_fig, 'Time_Shift_Estimation.png', './Run_Output/', 'AIF Delay Estimation', 'AIFDelayEst');
     
