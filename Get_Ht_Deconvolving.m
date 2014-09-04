@@ -70,8 +70,8 @@ USE_WIENER                      = Sim_Struct.USE_WIENER;
 USE_TICHONOV                    = Sim_Struct.USE_TICHONOV;
 
 %% Estimating h(t) by Wiener filter / Tikhonov Regularization
-Est_IRF                   = zeros(num_voxels,num_time_stamps);
-est_delay_by_AIF_correct = zeros(1,num_voxels);
+Est_IRF                         = zeros(num_voxels,num_time_stamps);
+est_delay_by_AIF_correct        = zeros(1,num_voxels);
 
 
 if USE_WIENER

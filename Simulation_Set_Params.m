@@ -12,6 +12,9 @@ Sim_Struct.USE_ONE_GAUSSIAN              = false;
 Sim_Struct.USE_DOUBLE_GAUSSIAN           = false;
 Sim_Struct.USE_WIENER                    = false;
 Sim_Struct.USE_TICHONOV                  = true;
+Sim_Struct.Correct_PVE                   = true;  % Correct Partial Volume Effect for AIF
+Sim_Struct.Threshold_Norm_Maps           = true;  % Threshold maps before normalizeing them to 0-1 (avoid saturation effects)
+Sim_Struct.Threshold_Val                 = 0.026768 * 242.9221;
 
 % Force serial and not parallel
 Sim_Struct.FORCE_SERIAL                  = false;

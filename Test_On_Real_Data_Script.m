@@ -50,7 +50,7 @@ Sim_Struct.sec_interval     = TimeBetweenDCEVolsFinal;
 Sim_Struct.min_interval     = Sim_Struct.sec_interval / 60;
 time_vec_minutes            = Sim_Struct.min_interval * ( 0 : Sim_Struct.num_time_stamps - 1 );
 Sim_Struct.time_vec_minutes = time_vec_minutes;
- 
+
 
 %TimeBetweenDCEVolsMin   = TimeBetweenDCEVolsFinal/60;
 %HSampleTs               = TimeBetweenDCEVolsMin*(0:nSVols-1);
@@ -138,7 +138,9 @@ AIF_estimated_ICA  = transpose(mean(transpose(CTC2D(ICA_Art2D_indices,:)),2));
 if exist('Vein_Mask','var')
     Vein_estimated_ICA = transpose(mean(transpose(CTC2D(ICA_Vein2D_indices,:)),2));
     % Coorect AIF scale to avoid Partial Volume Effect
-    AIF_estimated_ICA = CorrectPVE(AIF_estimated_ICA, Vein_estimated_ICA, time_vec_minutes);
+    if Sim_Struct.Correct_PVE
+        [AIF_estimated_ICA, Scale_Factor] = CorrectPVE(AIF_estimated_ICA, Vein_estimated_ICA, Sim_Struct);
+    end
 end
 
 %% Take Ct and AIF and calculate Ht
@@ -358,7 +360,7 @@ if (num_total_voxels > 1000)
     DCEFNs    = strcat(DCECoregP,{DDCE.name})';
     
     %% Maps
-
+    
     if (Sim_Struct.USE_ONE_GAUSSIAN)
         MeanFN=[PefusionOutput 'Delay_Single_Gaussian.nii'];
         Raw2Nii(t_delay_single_gauss_sec_3D,MeanFN,'float32',DCEFNs{1});
@@ -382,7 +384,7 @@ if (num_total_voxels > 1000)
         Raw2Nii(RMS_params_3D,MeanFN,'float32',DCEFNs{1});
         
     end
-      
+    
     if (Sim_Struct.USE_DOUBLE_GAUSSIAN)
         
         MeanFN=[PefusionOutput 'Time_Delay_1_double_gaussian.nii'];
@@ -416,7 +418,7 @@ if (num_total_voxels > 1000)
         Raw2Nii(RMS_params_double_gauss_3D,MeanFN,'float32',DCEFNs{1});
         
     end
-        
+    
     MeanFN=[PefusionOutput 'Time_Delay_Novel_AIF_Correct.nii'];
     Raw2Nii(est_delay_by_AIF_correct_3D,MeanFN,'float32',DCEFNs{1});
     
@@ -462,43 +464,22 @@ if (num_total_voxels > 1000)
     MeanFN=[PefusionOutput 'CTC_per_voxel.nii'];
     Raw2Nii(CTC_4D,MeanFN,'float32',DCEFNs{1});
     
-end
-
-display('-I- Normalizing Maps to White Matter...');
-% Normalize maps (if masks exist)
-if ( exist(WM_mask_absolute_path,'file') )
+    % Normalized 0-1 maps
+    Flow_Larsson_3D          = loadniidata([PefusionOutput 'Flow_Larsson.nii']);
+    Ktrans_3D                = loadniidata([PefusionOutput 'Ktrans.nii']);
+    Vb_3D                    = loadniidata([PefusionOutput 'Vb.nii']);
+    Ve_3D                    = loadniidata([PefusionOutput 'Ve.nii']);
     
-    WM_mask_3D          = loadniidata(WM_mask_absolute_path);
+    if Sim_Struct.Threshold_Norm_Maps
+        max_val                                                            = Sim_Struct.Threshold_Val;
+        Flow_Larsson_3D_Thresholded                                        = Flow_Larsson_3D;
+        Flow_Larsson_3D_Thresholded(Flow_Larsson_3D_Thresholded > max_val) = max_val;
+        Flow_Larsson_3D_Norm_0_1                                           = Flow_Larsson_3D_Thresholded ./ max(max(max(Flow_Larsson_3D_Thresholded)));
+    else
+        Flow_Larsson_3D_Norm_0_1                                           = Flow_Larsson_3D ./ max(max(max(Flow_Larsson_3D)));
+    end
     
-    % DEBUG
-    Flow_Larsson_3D     = loadniidata([PefusionOutput 'Flow_Larsson.nii']);
     
-    Ktrans_3D           = loadniidata([PefusionOutput 'Ktrans.nii']);
-    
-%     if exist([WorkingP 'ManualArtNoBAT3\'],'dir')
-%         Ktrans_3D       = loadniidata([WorkingP 'ManualArtNoBAT3\KtransFinalN.nii']);
-%     else % Auto art
-%         Ktrans_3D       = loadniidata([WorkingP 'AutoArtBAT\KtransFinalN.nii']);
-%     end
-        
-    % According to Larsson. WM Flow should be 30.6 [mL/100mL]
-    [ Normalized_F_Map ]      = Normalize_Output_Maps( Flow_Larsson_3D, WM_mask_3D , 30.6);
-    % According to Larsson. WM Ktrans should be 0.84 [mL/100mL/min]
-    [ Normalized_Ktrans_Map ] = Normalize_Output_Maps( Ktrans_3D, WM_mask_3D , 0.84);
-    
-    MeanFN = [PefusionOutput 'Flow_Larsson_Relative_WM_30_6.nii'];
-    Raw2Nii(Normalized_F_Map,MeanFN,'float32',DCEFNs{1});
-    
-    MeanFN = [PefusionOutput 'Ktrans_Relative_WM_0_84.nii'];
-    Raw2Nii(Ktrans_3D,MeanFN,'float32',DCEFNs{1});
-    
-    % 0-1 maps
-    max_val = 0.026768 * 242.9221;
-    
-    Flow_Larsson_3D_Thresholded                                        = Flow_Larsson_3D;
-    Flow_Larsson_3D_Thresholded(Flow_Larsson_3D_Thresholded > max_val) = max_val;
-    
-    Flow_Larsson_3D_Norm_0_1 = Flow_Larsson_3D_Thresholded ./ max(max(max(Flow_Larsson_3D_Thresholded)));
     Ktrans_3D_Norm_0_1       = Ktrans_3D ./ max(max(max(Ktrans_3D)));
     
     MeanFN = [PefusionOutput 'Flow_Larsson_Normalized_0_1.nii'];
@@ -507,14 +488,39 @@ if ( exist(WM_mask_absolute_path,'file') )
     MeanFN = [PefusionOutput 'Ktrans_Larsson_Normalized_0_1.nii'];
     Raw2Nii(Ktrans_3D_Norm_0_1,MeanFN,'float32',DCEFNs{1});
     
-    MeanFN = [PefusionOutput 'Ktrans_Tofts_Normalized_0_1.nii'];
-    Raw2Nii(Ktrans_3D_Norm_0_1,MeanFN,'float32',DCEFNs{1});
+    
+    % Normalize maps (if masks exist)
+    if ( exist(WM_mask_absolute_path,'file') )
+        
+        display('-I- Normalizing Maps to White Matter...');
+        
+        WM_mask_3D                = loadniidata(WM_mask_absolute_path);
+        
+        % According to Larsson. WM Flow should be 30.6 [mL/100mL/min]
+        [ Normalized_F_Map ]      = Normalize_Output_Maps( Flow_Larsson_3D, WM_mask_3D , 30.6);
+        % According to Larsson. WM Ktrans should be 0.84 [mL/100mL/min]
+        [ Normalized_Ktrans_Map ] = Normalize_Output_Maps( Ktrans_3D, WM_mask_3D , 0.84);
+        % According to Jim.     WM Vp should be 0.01 [mL/100mL]
+        [ Normalized_Vb_Map ]     = Normalize_Output_Maps( Vb_3D, WM_mask_3D , 0.01);
+        
+        MeanFN = [PefusionOutput 'Flow_Larsson_Relative_WM_30_6.nii'];
+        Raw2Nii(Normalized_F_Map,MeanFN,'float32',DCEFNs{1});
+        
+        MeanFN = [PefusionOutput 'Ktrans_Relative_WM_0_84.nii'];
+        Raw2Nii(Normalized_Ktrans_Map,MeanFN,'float32',DCEFNs{1});
+        
+        MeanFN = [PefusionOutput 'Vb_Relative_WM_0_01.nii'];
+        Raw2Nii(Normalized_Vb_Map,MeanFN,'float32',DCEFNs{1});
+        
+    end
     
 end
 
 % Create PDF Report
 Local_Path = [PefusionOutput 'Run_Output'];
 MakeReport_func(Local_Path, LogFN);
+close all;
+
 %MakeReport;
 
 % % Display Ct(t) and fit of a single voxel
@@ -526,7 +532,7 @@ MakeReport_func(Local_Path, LogFN);
 % plot(squeeze(CTC_4D(x,y,z,:)),'b');
 % plot(squeeze(conv_result_IRF_4D(x,y,z,:)),'g');
 % hold off;
-% 
+%
 % figure;
 % hold on;
 % h1 = plot(time_vec_minutes,squeeze(CTC_4D(x,y,z,:)),'LineWidth',6,'Color','k');
@@ -540,6 +546,6 @@ MakeReport_func(Local_Path, LogFN);
 % xlabel('Time [Min]','fontsize',15,'FontWeight','bold');
 % ylabel('C_t(t) [mM]','fontsize',15,'FontWeight','bold');
 % set(gca,'fontsize',15,'FontWeight','bold');
-% 
-% 
-% 
+%
+%
+%

@@ -4,15 +4,15 @@ function [Subject_name, Subject_Path, WM_mask_absolute_path, Art_Mask, Vein_Mask
 
 Subject_name          = 'ReYe';
 Subject_Path          = '\\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL\Study20140615_114415';
-WM_mask_absolute_path = [Subject_Path  '\RefAuto1_WM_830.nii'];
+WM_mask_absolute_path = [Subject_Path  '\RefT1_WM_830.nii'];
 %Art_Mask              = [Subject_Path  '\ManualArtMask.nii'];
 Art_Mask              = [Subject_Path  '\InspectedRepVox.nii'];
 Vein_Mask             = [Subject_Path  '\Veins_Mask.nii'];
 After_CTC_mat         = [Subject_Path  '\AfterCTC.mat'];
 %DCECoregP = [WorkingP 'DCEMainCoreged' filesep];
 % \\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL
-DCECoregP = [Subject_Path filesep 'DCE_out' filesep 'OrZe_20130811' filesep];
-DCECoregP = '\\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL\';
+DCECoregP             = [Subject_Path filesep 'DCE_out' filesep 'OrZe_20130811' filesep];
+DCECoregP             = '\\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL\';
 
 
 
