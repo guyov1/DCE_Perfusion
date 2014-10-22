@@ -6,7 +6,7 @@ end
 
 % Real Data parameters
 Sim_Struct.RealData_Flag                 = false;  % Treat data as it were real one
-Sim_Struct.Parallel_Real_Data_Est        = false;   % Parallel the for loop in real data estimation
+Sim_Struct.Parallel_Real_Data_Est        = true;   % Parallel the for loop in real data estimation
 Sim_Struct.Force_RealData_Calc           = true;   % Force the calculation of real data even if calculated bafore
 Sim_Struct.USE_ONE_GAUSSIAN              = false;
 Sim_Struct.USE_DOUBLE_GAUSSIAN           = false;
@@ -101,7 +101,7 @@ Sim_Struct.knots                    = Sim_Struct.time_vec_minutes(1:Sim_Struct.k
 
 % Add randomly delay to the AIF
 Sim_Struct.AIF_delay_low                 = -0.5;
-Sim_Struct.AIF_delay_max                 = +10.0;
+Sim_Struct.AIF_delay_max                 = +20.0;
 
 % Delay parameters
 Sim_Struct.additional_AIF_delay_sec     = +-1; % Delay added to AIF before filtering
