@@ -19,7 +19,8 @@ Sim_Struct.Threshold_Val                 = 0.026768 * 242.9221;
 % Use model selection
 Sim_Struct.Use_Model_Selection           = true;
 Sim_Struct.AIC_Correction                = true; % Use correction for AIC
-Sim_Struct.Data_Weight                   = 1;  % Data weight comparing to # of params (Gilad uses 0.1)
+Sim_Struct.Data_Weight                   = 0.1;  % Data weight comparing to # of params (Gilad uses 0.1)
+Sim_Struct.Ignore_Delay_Model_Selection  = true; % Ignore models with delay
 
 % Force serial and not parallel
 Sim_Struct.FORCE_SERIAL                  = true;
@@ -101,10 +102,10 @@ Sim_Struct.knots                    = Sim_Struct.time_vec_minutes(1:Sim_Struct.k
 
 % Add randomly delay to the AIF
 Sim_Struct.AIF_delay_low                 = -0.0;
-Sim_Struct.AIF_delay_max                 = +10.0;
+Sim_Struct.AIF_delay_max                 = +20.0;
 
 % Delay parameters
-Sim_Struct.additional_AIF_delay_sec     = +0.0; % Delay added to AIF before filtering
+Sim_Struct.additional_AIF_delay_sec     = +-1; % Delay added to AIF before filtering
 Sim_Struct.additional_AIF_delay_sec_vec = linspace(Sim_Struct.AIF_delay_low, Sim_Struct.AIF_delay_max, Sim_Struct.num_iterations); % When iterating;;
 
 % AIF parameters - Parker's AIF
