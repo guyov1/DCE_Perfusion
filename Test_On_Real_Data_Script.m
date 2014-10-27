@@ -20,14 +20,15 @@ Sim_Struct = struct;
 Sim_Struct = Simulation_Set_Params(Sim_Struct, Verbosity);
 
 % Override real data flag and parameters range
-Sim_Struct.RealData_Flag       = true;
-Sim_Struct.Vb_low              = 0.1; % [mL/100g]     , they used 3,6,12,18
-Sim_Struct.Vb_max              = 100;
-Sim_Struct.Ve_low              = 0.1; % Must be smaller than Vtis
-Sim_Struct.Ve_max              = 100;
-Sim_Struct.LowerBound_Larsson  = [Sim_Struct.Vb_low Sim_Struct.E_low  Sim_Struct.Ve_low];
-Sim_Struct.UpperBound_Larsson  = [Sim_Struct.Vb_max Sim_Struct.E_max  Sim_Struct.Ve_max];
-Sim_Struct.init_Ve_guess       = 0.1;
+Sim_Struct.RealData_Flag              = true;
+Sim_Struct.Vb_low                     = 0.1; % [mL/100g]     , they used 3,6,12,18
+Sim_Struct.Vb_max                     = 100;
+Sim_Struct.Ve_low                     = 0.1; % Must be smaller than Vtis
+Sim_Struct.Ve_max                     = 100;
+Sim_Struct.LowerBound_Larsson         = [Sim_Struct.Vb_low Sim_Struct.E_low  Sim_Struct.Ve_low];
+Sim_Struct.UpperBound_Larsson         = [Sim_Struct.Vb_max Sim_Struct.E_max  Sim_Struct.Ve_max];
+Sim_Struct.init_Ve_guess              = 0.1;
+Sim_Struct.LQ_Model_AIF_Delay_Correct = false;
 
 % Set parallel processing if needed
 Set_Parallel_Processing(Sim_Struct, Verbosity);
@@ -269,14 +270,15 @@ save(Mat_File_To_Save,'Flow_Larsson_with_Delay','Flow_Larsson_no_Delay','Delay_s
     ,'est_delay_by_AIF_correct','t_delay_single_gauss_sec','sigma_seconds_single_gauss','Amp_single_gauss'...
     ,'Est_IRF_with_Delay','Est_IRF_no_Delay', 'conv_result_Larss_with_Delay', 'conv_result_Larss_no_Delay', 'conv_result_Larss_no_Delay_High_F'...
     , 'conv_result_Larss_no_Delay_no_E','conv_result_Larss_no_Delay_no_E_High_F','conv_result_no_Delay_IRF', 'conv_result_gaussian'...
-    , 'RMS_Larss_with_Delay', 'RMS_Larss_no_Delay', 'RMS_Larss_with_Delay_High_F', 'RMS_Larss_no_Delay_High_F', 'RMS_Larss_no_Delay_no_E','RMS_Larss_with_Delay_no_E', 'RMS_Larss_with_Delay_no_E_High_F', 'RMS_Larss_no_Delay_no_E_High_F','RMS_ht_no_Delay'...
+    , 'RMS_Larss_with_Delay', 'RMS_Larss_no_Delay', 'RMS_Larss_with_Delay_High_F', 'RMS_Larss_no_Delay_High_F', 'RMS_Larss_no_Delay_no_E','RMS_Larss_with_Delay_no_E', 'RMS_Larss_with_Delay_no_E_High_F', 'RMS_Larss_no_Delay_zero_params', 'RMS_Larss_no_Delay_no_E_High_F','RMS_ht_no_Delay'...
     ,'RMS_gauss','RMS_params_Gauss','double_gauss_params','RMS_double_gauss','RMS_params_double_gauss'...
     ,'Ktrans_with_Delay','Ktrans_no_Delay', 'E_with_Delay', 'E_no_Delay', 'Ktrans_with_Delay_High_F', 'Ktrans_no_Delay_High_F','Vb_with_Delay', 'Vb_no_Delay','Vb_with_Delay_High_F'...
     , 'Vb_no_Delay_High_F', 'Vb_no_Delay_no_E', 'Vb_with_Delay_no_E', 'Vb_with_Delay_no_E_High_F', 'Vb_no_Delay_no_E_High_F'...
     , 'Ve_with_Delay', 'Ve_no_Delay','Ve_with_Delay_High_F', 'Ve_no_Delay_High_F', 'MTT_with_Delay', 'MTT_no_Delay'...
     , 'Ktrans_Patlak_with_Delay_vec', 'Ktrans_Patlak_no_Delay_vec'...
     , 'Vb_Patlak_with_Delay_vec', 'Vb_Patlak_no_Delay_vec', 'MTT_Patlak_with_Delay_vec', 'MTT_Patlak_no_Delay_vec'...
-    ,'Msk2','WorkingP','PefusionOutput','num_total_voxels','time_vec_minutes','TimeBetweenDCEVolsFinal','time_vec_minutes');
+    ,'Msk2','WorkingP','PefusionOutput','num_total_voxels','time_vec_minutes','TimeBetweenDCEVolsFinal','time_vec_minutes'...
+    ,'fitted_gaussian', 'fitted_double_gaussian','Chosen_AIF', 'DCECoregP','Sim_Struct','WM_mask_absolute_path','Subject_Path');
 %load(Mat_File_To_Save);
 
 % Write only in case we used the entire brain (say, above 1000 voxels)
@@ -446,8 +448,11 @@ if (num_total_voxels > 1000)
     %
     
     nDataPoints      = length(time_vec_minutes);
+    zeros_map        = zeros(size(Flow_Larsson_with_Delay_3D));
+    Inf_map          = exp(100) * ones(size(Flow_Larsson_with_Delay_3D));
     
     if Sim_Struct.Ignore_Delay_Model_Selection
+        
         NParams          = [0 1 2 3 4];
         num_maps         = length(NParams);
         size_3D          = size(RMS_Larss_no_Delay_3D);
@@ -523,8 +528,6 @@ if (num_total_voxels > 1000)
         %[ ChosenByAIC_3D ]                      = Model_Selection( nDataPoints, RMSmaps, NParams, 0.1, Sim_Struct.AIC_Correction);
         
         % Delay
-        zeros_map                                      = zeros(size(Flow_Larsson_with_Delay_3D));
-        Inf_map                                        = exp(100) * ones(size(Flow_Larsson_with_Delay_3D));
         AIF_Delay_Model_Selected_3D                    = zeros(size(est_delay_by_AIF_correct_3D));
         AIF_Delay_Model_Selected_3D(ChosenByAIC_3D==9) = est_delay_by_AIF_correct_3D (ChosenByAIC_3D==9);
         AIF_Delay_Model_Selected_3D(ChosenByAIC_3D==7) = est_delay_by_AIF_correct_3D (ChosenByAIC_3D==7);
@@ -869,14 +872,24 @@ if (num_total_voxels > 1000)
         WM_mask_3D                = loadniidata(WM_mask_absolute_path);
         
         % According to Larsson. WM Flow should be 30.6 [mL/100mL/min]
-        [ Normalized_F_Map ]      = Normalize_Output_Maps( Flow_Larsson_no_Delay_3D, WM_mask_3D , 30.6);
+        [ Normalized_F_Map ]             = Normalize_Output_Maps( Flow_Larsson_no_Delay_3D, WM_mask_3D , 30.6);
+        
+        % Take indices where both F and WM mask exist
+        WM_mask_3D_Flow                      = zeros(size(WM_mask_3D));
+        WM_mask_3D_Flow(F_Model_Selected_3D ~= 0) =  WM_mask_3D(F_Model_Selected_3D ~= 0);
+        
+        [ Normalized_F_Model_Select_Map ]= Normalize_Output_Maps( F_Model_Selected_3D, WM_mask_3D_Flow , 30.6);
+        
         % According to Larsson. WM Ktrans should be 0.84 [mL/100mL/min]
         [ Normalized_Ktrans_Map ] = Normalize_Output_Maps( Ktrans_no_Delay_3D, WM_mask_3D , 0.84);
         % According to Jim.     WM Vp should be 0.01 [mL/100mL]
         [ Normalized_Vb_Map ]     = Normalize_Output_Maps( Vb_no_Delay_3D, WM_mask_3D , 0.01);
         
-        MeanFN = [PefusionOutput 'Flow_Larsson_no_Delay_Relative_WM_30_6.nii'];
+        MeanFN = [PefusionOutput 'Flow_Larsson_Relative_WM_30_6.nii'];
         Raw2Nii(Normalized_F_Map,MeanFN,'float32',DCEFNs{1});
+        
+        MeanFN = [PefusionOutput 'Flow_Larsson_model_selection_Relative_WM_30_6.nii'];
+        Raw2Nii(Normalized_F_Model_Select_Map,MeanFN,'float32',DCEFNs{1});
         
         MeanFN = [PefusionOutput 'Ktrans_Relative_no_Delay_WM_0_84.nii'];
         Raw2Nii(Normalized_Ktrans_Map,MeanFN,'float32',DCEFNs{1});
