@@ -1,23 +1,44 @@
+function [ ] = Run_DCE_Perfusion( Subject_name, Subject_Path, Sim_Struct, PefusionOutput, Verbosity )
+%UNTITLED Summary of this function goes here
+%   Detailed explanation goes here
+
+display('---------------------------------------------------');
+display('-I- Started Run_DCE_Perfusion execution at:');
+c = clock;
+disp(datestr(datenum(c(1),c(2),c(3),c(4),c(5),c(6))));
+display('---------------------------------------------------');
+
+% % Initiate simulation struct
+% Sim_Struct = struct;
+% % Set simulation parameters
+% Sim_Struct = Simulation_Set_Params(Sim_Struct, Verbosity);
+
+DCECoregP             = Subject_Path;
+WM_mask_absolute_path = [Subject_Path  '\RefT1_WM_830.nii'];
+Art_Mask              = [Subject_Path  '\InspectedRepVox.nii'];
+Vein_Mask             = [Subject_Path  '\Veins_Mask.nii'];
+After_CTC_mat         = [Subject_Path  '\AfterCTC.mat'];
+Brain_Extract_path    = [Subject_Path  '\rSPGRpost_Extracted_brain.nii'];
+
+%DCECoregP = [WorkingP 'DCEMainCoreged' filesep];
+% \\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL
+%DCECoregP             = [Subject_Path filesep 'DCE_out' filesep 'OrZe_20130811' filesep];
+%DCECoregP             = '\\fmri-t9\users\Moran\Stereotactic_Biopsy\PEKUROVSKI_NELENTINA\Study20140902_092528\DCE6min\PeNe_20140902_2sec\';
+%DCECoregP             = '\\fmri-t9\users\Moran\DCE\HTR_STROKE\KOCHAV_ZAFRIRA\Study20141022_134250\DCE\KoZa_20141022\';
+%DCECoregP             = '\\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL\Study20140615_114415\DCE-HTR\ReYe_20140615_2sec';
+
 % Close all open figures
-close all;
+%close all;
 % Clear everything except breakpoints
-current_break_points = dbstatus;
-save('myBreakpoints.mat', 'current_break_points');
-clear all;
-load('myBreakpoints.mat');
-delete('myBreakpoints.mat');
-dbstop(current_break_points);
+%current_break_points = dbstatus;
+%save('myBreakpoints.mat', 'current_break_points');
+%clear all;
+%load('myBreakpoints.mat');
+%delete('myBreakpoints.mat');
+%dbstop(current_break_points);
 
 % Add current directory and all it's subdirectories to Matlab's path
-addpath(genpath('./'));
-
-Verbosity = 'None';
-
-% Initiate simulation struct
-Sim_Struct = struct;
-
-% Set simulation parameters
-Sim_Struct = Simulation_Set_Params(Sim_Struct, Verbosity);
+%addpath(genpath('./'));
 
 % Override real data flag and parameters range
 Sim_Struct.RealData_Flag              = true;
@@ -28,17 +49,10 @@ Sim_Struct.Ve_max                     = 100;
 Sim_Struct.LowerBound_Larsson         = [Sim_Struct.Vb_low Sim_Struct.E_low  Sim_Struct.Ve_low];
 Sim_Struct.UpperBound_Larsson         = [Sim_Struct.Vb_max Sim_Struct.E_max  Sim_Struct.Ve_max];
 Sim_Struct.init_Ve_guess              = 0.1;
-Sim_Struct.LQ_Model_AIF_Delay_Correct = false;
 
 % Set parallel processing if needed
 Set_Parallel_Processing(Sim_Struct, Verbosity);
 
-% Read input MRI data
-[Subject_name, Subject_Path, WM_mask_absolute_path, Art_Mask, Vein_Mask, After_CTC_mat, DCECoregP, Brain_Extract_path] = ReadRealData();
-
-% Create output directory
-mkdir([Subject_Path filesep 'Perfusion_DCE\']);
-PefusionOutput        = [Subject_Path filesep 'Perfusion_DCE\'];
 % Set output directory for figures/report
 Output_directory      =  [PefusionOutput 'Run_Output/'];
 
@@ -482,7 +496,7 @@ if (num_total_voxels > 1000)
         F_Model_Selected_3D                     = zeros(size(Flow_Larsson_with_Delay_3D));
         F_Model_Selected_3D (ChosenByAIC_3D==5) = Flow_Larsson_with_Delay_3D   (ChosenByAIC_3D==5);
         F_Model_Selected_3D (ChosenByAIC_3D==4) = zeros_map                    (ChosenByAIC_3D==4); % Put zero although its Inf
-        F_Model_Selected_3D (ChosenByAIC_3D==3) = Flow_Larsson_with_Delay_3D   (ChosenByAIC_3D==3);        
+        F_Model_Selected_3D (ChosenByAIC_3D==3) = Flow_Larsson_with_Delay_3D   (ChosenByAIC_3D==3);
         F_Model_Selected_3D (ChosenByAIC_3D==2) = zeros_map                    (ChosenByAIC_3D==2); % Put zero although its Inf
         F_Model_Selected_3D (ChosenByAIC_3D==1) = zeros_map                    (ChosenByAIC_3D==1);
         % Vb
@@ -803,8 +817,9 @@ if (num_total_voxels > 1000)
     
     
     max_idx = length(time_vec_minutes); %130
-    min_idx = 1; 
-    est_MTT_noise = cumtrapz(time_vec_minutes(min_idx:max_idx),IRF_4D(:,:,:,min_idx:max_idx),4); est_MTT_noise = est_MTT_noise(:,:,:,end);
+    min_idx = 1;
+    est_MTT_noise = cumtrapz(time_vec_minutes(min_idx:max_idx),Est_IRF_with_Delay_4D(:,:,:,min_idx:max_idx),4); est_MTT_noise = est_MTT_noise(:,:,:,end);
+    
     MeanFN=[PefusionOutput 'MTT_Test.nii'];
     Raw2Nii(est_MTT_noise*60,MeanFN,'float32',DCEFNs{1});
     
@@ -956,7 +971,7 @@ if (num_total_voxels > 1000)
         
         
         
-        [ Normalized_F_Model_Select_Map ]         = Normalize_Output_Maps( F_Model_Selected_3D, WM_mask_3D_Flow , 30.6);      
+        [ Normalized_F_Model_Select_Map ]         = Normalize_Output_Maps( F_Model_Selected_3D, WM_mask_3D_Flow , 30.6);
         
         
         Normalized_F_Model_Select_Map_Brain_Extract  = zeros(size(Normalized_F_Model_Select_Map));
@@ -1020,3 +1035,13 @@ close all;
 %
 %
 %
+
+
+display('---------------------------------------------------');
+display('-I- Finished Run_DCE_Perfusion execution at:');
+c = clock;
+disp(datestr(datenum(c(1),c(2),c(3),c(4),c(5),c(6))));
+display('---------------------------------------------------');
+
+end
+
