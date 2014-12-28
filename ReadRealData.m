@@ -12,7 +12,7 @@ WM_mask_absolute_path = [Subject_Path  '\RefT1_WM_830.nii'];
 Art_Mask              = [Subject_Path  '\InspectedRepVox.nii'];
 Vein_Mask             = [Subject_Path  '\Veins_Mask.nii'];
 After_CTC_mat         = [Subject_Path  '\AfterCTC.mat'];
-Brain_Extract_path    = '\\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL\Study20140615_114415\DCE-HTR\Results\2sec\rSPGRpost_Extracted_brain.nii';
+Brain_Extract_path    = '\\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL\Study20140615_114415\DCE-HTR\Results\2sec\Manual_BrainMask.nii';
 %DCECoregP = [WorkingP 'DCEMainCoreged' filesep];
 % \\fmri-t9\users\Moran\DCE\HTR_STROKE\01_REMEZ_YECHEZKEL
 %DCECoregP             = [Subject_Path filesep 'DCE_out' filesep 'OrZe_20130811' filesep];
