@@ -98,6 +98,8 @@ Defaults.Force_RealData_Calc                   = 1;
 ParamToolTips.Force_RealData_Calc              = ['Force_RealData_Calc: Force calculation if already calculated.' 10 'Default: 1'];
 Defaults.Parallel_Real_Data_Est                = 1;
 ParamToolTips.Parallel_Real_Data_Est           = ['Parallel_Real_Data_Est: Run Calculation parallel.' 10 'Default: 1'];
+Defaults.Adjusted_Larsson_Model                = 1;
+ParamToolTips.Adjusted_Larsson_Model           = ['Use adjusted Larsson Model.' 10 'Default: 1'];
 
 Defaults.Correct_PVE                     = 1;
 ParamToolTips.Correct_PVE                = ['Correct_PVE: Correct AIF for PVE.' 10 'Default: 1'];
@@ -359,7 +361,7 @@ PefusionOutput        = get(handles.Dest_Folder_TextBox,'String');
 % Override parameters with what user chose
 FNames  = {{'Use_Model_Selection'} {'Ignore_Delay_Model_Selection'} {'Correct_estimation_due_to_delay'} ...
            {'Min_Time_Delay'} {'Max_Time_Delay'} {'Force_RealData_Calc'} {'Parallel_Real_Data_Est'} ...
-           {'Correct_PVE'} {'AIC_Correction'} {'Data_Weight'} ...
+           {'Correct_PVE'} {'AIC_Correction'} {'Data_Weight'} {'Adjusted_Larsson_Model'}...
            {'poly_deg'} {'knot_interval'} {'LQ_Model_AIF_Delay_Correct'} {'Upsampling_resolution_Sec'} ...
            {'Use_Cyclic_Conv_4_ht_est'} {'Simple_AIF_Delay_Correct'}};
        
