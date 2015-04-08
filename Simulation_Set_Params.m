@@ -30,7 +30,7 @@ Sim_Struct.FORCE_SERIAL                  = true;
 Sim_Struct.FORCE_MAIN_LOOP_SERIAL        = true;
 
 % Set number of iterations for simulation
-Sim_Struct.num_iterations                = 50; %1500
+Sim_Struct.num_iterations                = 20; %1500
 % Avoid memory overhead if there are too many iteratins
 if (Sim_Struct.num_iterations > 40)
     Sim_Struct.FORCE_SERIAL                  = true;
@@ -39,7 +39,7 @@ end
 % Do each iteration a few time and average results for better statistic information
 Sim_Struct.num_averages                  = 1; %5
 % Determines SNR ( noise_var = mean(signal)/SNR_base )
-Sim_Struct.SNR_single                    = 150; %15 
+Sim_Struct.SNR_single                    = 100; %15 
 Sim_Struct.SNR_vec                       = linspace( 20, 1, Sim_Struct.num_iterations);
 % Determine according to what parameter to check simulations
 Sim_Struct.iterate_SNR                   = 0;
@@ -83,7 +83,7 @@ Sim_Struct.Ignore_Gaussian_Calculation   = true;      % Ignores all calculations
 
 %% ------------------- Time Parameters ------------------------------------
 % Total simulation time
-Sim_Struct.total_sim_time_min       = 6; %[min]
+Sim_Struct.total_sim_time_min       = 2; %[min]
 % Time interval between samples
 Sim_Struct.sec_interval             = 6; %[sec] . default = 2
 Sim_Struct.sec_vec                  = linspace(0.5,15,Sim_Struct.num_iterations); % For iterations
@@ -209,6 +209,17 @@ Sim_Struct.Ve_vec     = linspace(Sim_Struct.Ve_low, Sim_Struct.Ve_max, Sim_Struc
 %% ETM settings
 % Use the ETM model instead of the Larsson filter
 Sim_Struct.ETM_Model                     = true;
+% Read the latest run parameters from the excel file
+Sim_Struct.readLatestData                = true;
+% Excel file to write and read from
+Sim_Struct.ETM_filename                  = 'exported_kep_simulation.csv';
+% Index to plot
+Sim_Struct.ETM_idx_to_plot               = 14;
+% Extended time to plot
+Sim_Struct.total_sim_time_min_to_plot    = 20;
+Sim_Struct.num_time_stamps_to_plot       = round(Sim_Struct.total_sim_time_min_to_plot / Sim_Struct.min_interval);
+Sim_Struct.time_vec_minutes_to_plot      = (0 : Sim_Struct.num_time_stamps_to_plot - 1).* Sim_Struct.min_interval;
+
 % Use a manual time vector for ETM estimation
 Sim_Struct.use_manual_time_vec           = false;
 if Sim_Struct.use_manual_time_vec
@@ -217,23 +228,25 @@ if Sim_Struct.use_manual_time_vec
 end
 % Parameter just for ETM estimation
 Sim_Struct.Ktrans_ETM_single = 0.11;
-Sim_Struct.Ktrans_ETM_low    = 0.0; % 0.05
-Sim_Struct.Ktrans_ETM_max    = 0.1; % 0.5
-Sim_Struct.Ktrans_ETM_vec    = linspace(Sim_Struct.Ktrans_ETM_low, Sim_Struct.Ktrans_ETM_max, Sim_Struct.num_iterations); % When iterating
+Sim_Struct.Ktrans_ETM_low    = 0.56; % 0.05
+Sim_Struct.Ktrans_ETM_max    = 0.8; % 0.5
+% Sim_Struct.Ktrans_ETM_vec    = linspace(Sim_Struct.Ktrans_ETM_low, Sim_Struct.Ktrans_ETM_max, Sim_Struct.num_iterations); % When iterating
 Sim_Struct.Vp_ETM_single     = 0.1; 
-Sim_Struct.Vp_ETM_low        = 0.3; % 0.01
-Sim_Struct.Vp_ETM_max        = 0.9; % 0.3
-Sim_Struct.Vp_ETM_vec        = linspace(Sim_Struct.Vp_ETM_low, Sim_Struct.Vp_ETM_max, Sim_Struct.num_iterations); % When iterating
+Sim_Struct.Vp_ETM_low        = 0.1; % 0.01
+Sim_Struct.Vp_ETM_max        = 0.2; % 0.3
+% Sim_Struct.Vp_ETM_vec        = linspace(Sim_Struct.Vp_ETM_low, Sim_Struct.Vp_ETM_max, Sim_Struct.num_iterations); % When iterating
 
 Sim_Struct.kep_ETM_single     = 0.01; % 0.01
-Sim_Struct.kep_ETM_low        = 0.1; % 0.01
-Sim_Struct.kep_ETM_max        = 0.30; % 0.3
-Sim_Struct.kep_ETM_vec        = linspace(Sim_Struct.kep_ETM_low, Sim_Struct.kep_ETM_low, Sim_Struct.num_iterations); % When iterating
+Sim_Struct.kep_ETM_low        = 0.15; % 0.01
+Sim_Struct.kep_ETM_max        = 0.25; % 0.3
+% Sim_Struct.kep_ETM_vec        = linspace(Sim_Struct.kep_ETM_low, Sim_Struct.kep_ETM_low, Sim_Struct.num_iterations); % When iterating
 
 %Sim_Struct.Ve_ETM_single     = 0.3;          
 %Sim_Struct.Ve_ETM_low        = 0.01; % 0.01
 %Sim_Struct.Ve_ETM_max        = 0.3; % 0.3
 %Sim_Struct.Ve_ETM_vec        = linspace(Sim_Struct.Ve_ETM_low, Sim_Struct.Ve_ETM_low, Sim_Struct.num_iterations); % When iterating
+Sim_Struct.constraint  = 'Rcheck = ( (Sim_Struct.Ve_ETM + Sim_Struct.Vp_ETM) > 1 ) | ( Sim_Struct.Ve_ETM > 1 ) | ( Sim_Struct.Vp_ETM > 1 );';
+Sim_Struct.constraint  = 'Rcheck = ( Sim_Struct.Vp_ETM > 1 );';
 
 if Sim_Struct.ETM_Model
    display('-I- ETM Ranges:'); 
